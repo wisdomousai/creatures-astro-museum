@@ -4,6 +4,7 @@
 // closed. Clicking walks; clicking an exhibit goes to stand before it and shows its
 // caption, from which its page opens over the halls.
 import './museum.css';
+import { Roam } from '@wisdomousai/creatures';
 import {
   ACESFilmicToneMapping,
   Color,
@@ -28,7 +29,6 @@ import {
 } from 'three';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import config from 'virtual:astro-creatures-museum/config';
-import { Roam } from '../creatures/roam';
 import { template } from '../exhibits/registry';
 import type { Built, Ctx } from '../exhibits/types';
 import { Grid } from '../nav/grid';
@@ -155,11 +155,15 @@ async function run(plan: Plan, hud: Hud, materials: Materials, look: Look) {
 
   // The crew, about the halls: not for visitors who'd rather nothing moved (unless they've
   // asked for them: ?crew, kept).
-  const roam = new Roam(plan, scene, {
+  // (They walk the plan's lanes, through its doorways; the sun casts their shadows.)
+  const roam = new Roam(scene, {
+    lanes: plan.lanes,
+    links: plan.links,
     models: `${BASE}/creatures/`,
     roster: config.crew.roster,
     max: config.crew.max[1],
     look,
+    castShadows: true,
   });
   roam.enabled = wantCrew();
 

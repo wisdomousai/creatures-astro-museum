@@ -11,6 +11,7 @@ import type {
   Footprint,
   Hung,
   Lane,
+  Link,
   Plan,
   Room,
   Sign,
@@ -124,6 +125,9 @@ export function generate(input: Input): Plan {
   const signs: Sign[] = [];
   const blocks: Block[] = [];
   const lanes: Lane[] = [];
+  const links: Link[] = [];
+  const link = (a: string, ae: 'start' | 'end', b: string, be: 'start' | 'end') =>
+    links.push({ a: { lane: a, end: ae }, b: { lane: b, end: be } });
   const wings: Plan['wings'] = [];
 
   /** A run of wall from a to b, with a doorway in its middle if `door`. */
@@ -374,6 +378,14 @@ export function generate(input: Input): Plan {
       // Two strips for the crew, between the middle and each long wall.
       lanes.push({ id: `${id}-a`, room: id, at: fr.p(END, -0.9), along: f, length: length - 2 * END, width: 2.3 });
       lanes.push({ id: `${id}-b`, room: id, at: fr.p(length - END, 0.9), along: neg(f), length: length - 2 * END, width: 2.3 });
+      // And ways through for them: on from the hall before (the lobby's lane, on the east and
+      // west), back the way they came, and round at the far end.
+      if (h > 0) {
+        link(`${parent}-a`, 'end', `${id}-a`, 'start');
+        link(`${id}-b`, 'end', `${parent}-b`, 'start');
+      } else if (s === 'w' || s === 'e') link('lobby', s === 'w' ? 'start' : 'end', `${id}-a`, 'start');
+      else link(`${id}-b`, 'end', `${id}-a`, 'start');
+      if (!more) link(`${id}-a`, 'end', `${id}-b`, 'start');
 
       parent = id;
       at = fr.p(length, 0);
@@ -392,7 +404,7 @@ export function generate(input: Input): Plan {
     signs,
     blocks,
     lanes: lanes.map((l) => ({ ...l, at: [r3(l.at[0]), r3(l.at[1])], length: r3(l.length) })),
-    links: [],
+    links,
     spawn: { at: [0, EYE, 5.4], look: [0, EYE, z0] },
     wings,
   };

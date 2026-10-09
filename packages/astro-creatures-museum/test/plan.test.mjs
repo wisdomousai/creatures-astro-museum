@@ -134,3 +134,28 @@ test('nothing hangs over a post (where walls meet)', () => {
     }
   }
 });
+
+test('lanes lie inside their rooms, and links join lane ends once each', () => {
+  const plan = generate(input());
+  const ids = new Set(plan.lanes.map((l) => l.id));
+  for (const l of plan.lanes) {
+    const room = plan.rooms.find((r) => r.id === l.room);
+    // The front edge's ends and the back's: the floor goes back toward [z, -x] of along.
+    const back = [l.along[1], -l.along[0]];
+    for (const s of [0, l.length])
+      for (const d of [0, l.width]) {
+        const x = l.at[0] + l.along[0] * s + back[0] * d;
+        const z = l.at[1] + l.along[1] * s + back[1] * d;
+        assert.ok(x > room.min[0] && x < room.max[0] && z > room.min[1] && z < room.max[1], `${l.id} leaves ${room.id}`);
+      }
+  }
+  const ends = new Set();
+  for (const k of plan.links)
+    for (const e of [k.a, k.b]) {
+      assert.ok(ids.has(e.lane), `no lane ${e.lane}`);
+      const key = `${e.lane}:${e.end}`;
+      assert.ok(!ends.has(key), `${key} linked twice`);
+      ends.add(key);
+    }
+  assert.ok(plan.links.length > 0);
+});
