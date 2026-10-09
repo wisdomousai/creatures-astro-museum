@@ -33,8 +33,8 @@ export interface Options {
   wings?: Wing[];
   /** Generated art on the walls between exhibits: how much (0–1), and its seed. */
   filler?: { density?: number; seed?: string };
-  /** A building of your own, made in Blender with named slots (blender/README.md), from
-   * public/: '/museum/building.glb'. Without one, the museum is built from the kit. */
+  /** A building of your own, made in Blender with named slots (blender/buildings/README.md),
+   * from public/: '/museum/building.glb'. Without one, the museum is built from the kit. */
   building?: string;
   /** Your own exhibit templates: modules exporting an ExhibitTemplate as default, relative
    * to the project root ('./src/museum/neon.ts'). */
@@ -47,4 +47,6 @@ export interface Config extends Required<Omit<Options, 'crew' | 'filler' | 'buil
   crew: Crew;
   filler: { density: number; seed: string };
   building: string | null;
+  /** Where that file is on disk, for the build to read its plan. */
+  buildingFile: string | null;
 }

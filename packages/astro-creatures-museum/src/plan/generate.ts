@@ -210,7 +210,14 @@ export function generate(input: Input): Plan {
   // ---------- The lobby ----------
   const used = input.wings.slice(0, SIDES.length);
   const doorOn = new Set(used.map((_, i) => SIDES[i]));
-  rooms.push({ id: 'lobby', kind: 'lobby', wing: '', min: LOBBY.min, max: LOBBY.max, forward: [0, -1] });
+  rooms.push({
+    id: 'lobby',
+    kind: 'lobby',
+    wing: '',
+    min: LOBBY.min,
+    max: LOBBY.max,
+    forward: [0, -1],
+  });
   const [x0, z0] = LOBBY.min;
   const [x1, z1] = LOBBY.max;
   side([x0, z0], [x1, z0], doorOn.has('n'), 'lobby');
@@ -238,11 +245,29 @@ export function generate(input: Input): Plan {
   const room = x1 - junction - 2 * 0.4;
   if (input.about) {
     const fp = measure('about-wall', input.about, 0.5);
-    hangOn('lobby', 'about', [-outer, z0], [0, 1], fp, 'about-wall', [input.about], seedOf('about'));
+    hangOn(
+      'lobby',
+      'about',
+      [-outer, z0],
+      [0, 1],
+      fp,
+      'about-wall',
+      [input.about],
+      seedOf('about'),
+    );
   }
   {
     const a = art('lobby-n', 'wall', room);
-    hangOn('lobby', 'lobby-n', [doorOn.has('n') ? outer : 0, z0], [0, 1], a.fp, a.template, [], a.seed);
+    hangOn(
+      'lobby',
+      'lobby-n',
+      [doorOn.has('n') ? outer : 0, z0],
+      [0, 1],
+      a.fp,
+      a.template,
+      [],
+      a.seed,
+    );
   }
   // The side walls and the back: art either side of a doorway, or in the middle (either
   // side of the way in, on the back wall).
@@ -264,9 +289,25 @@ export function generate(input: Input): Plan {
     const p: V2 = [4.4, 3.2];
     const toward: V2 = [-4.4, 2.2];
     const len = Math.hypot(...toward);
-    standAt('lobby', 'contact', p, [toward[0] / len, toward[1] / len], fp, 'front-desk', [input.contact], seedOf('contact'));
+    standAt(
+      'lobby',
+      'contact',
+      p,
+      [toward[0] / len, toward[1] / len],
+      fp,
+      'front-desk',
+      [input.contact],
+      seedOf('contact'),
+    );
   }
-  lanes.push({ id: 'lobby', room: 'lobby', at: [-6.4, -1.4], along: [1, 0], length: 12.8, width: 3.6 });
+  lanes.push({
+    id: 'lobby',
+    room: 'lobby',
+    at: [-6.4, -1.4],
+    along: [1, 0],
+    length: 12.8,
+    width: 3.6,
+  });
 
   /**
    * A room of its own for an exhibit (`room: true`), behind a doorway in a hall's wall at
@@ -299,13 +340,19 @@ export function generate(input: Input): Plan {
     const wall = (a: V2, b: V2) => {
       const d: V2 = [b[0] - a[0], b[1] - a[1]];
       const toward = (centre[0] - a[0]) * right(d)[0] + (centre[1] - a[1]) * right(d)[1];
-      walls.push(toward > 0 ? { a, b, kind: 'solid', room: id } : { a: b, b: a, kind: 'solid', room: id });
+      walls.push(
+        toward > 0 ? { a, b, kind: 'solid', room: id } : { a: b, b: a, kind: 'solid', room: id },
+      );
     };
     wall(c0, b0);
     wall(b0, b1);
     wall(b1, c1);
     doors.push({ a: add(c, f, -DOOR.width / 2), b: add(c, f, DOOR.width / 2), rooms: [hall, id] });
-    signs.push({ text: e.title, at: v3(add(c, out, -WALL / 2 - 0.01), DOOR.height + 0.5), yaw: r3(yawOf(neg(out))) });
+    signs.push({
+      text: e.title,
+      at: v3(add(c, out, -WALL / 2 - 0.01), DOOR.height + 0.5),
+      yaw: r3(yawOf(neg(out))),
+    });
 
     // The piece, as big as the back wall allows.
     const fit = (fp: Footprint, w: number, h: number): Footprint => {
@@ -358,7 +405,14 @@ export function generate(input: Input): Plan {
     for (const e of wing.entries) {
       const last = groups[groups.length - 1];
       const holds = measure(e.template, e, 0.5).holds ?? 1;
-      if (holds > 1 && !e.room && last && !last.entries[0].room && last.template === e.template && last.entries.length < holds)
+      if (
+        holds > 1 &&
+        !e.room &&
+        last &&
+        !last.entries[0].room &&
+        last.template === e.template &&
+        last.entries.length < holds
+      )
         last.entries.push(e);
       else groups.push({ template: e.template, entries: [e] });
     }
@@ -383,7 +437,14 @@ export function generate(input: Input): Plan {
       const k: 'left' | 'right' =
         hall.used.left <= hall.used.right || !fits('right') ? 'left' : 'right';
       const start = END + hall.used[k] + (hall.used[k] ? GAP : 0);
-      hall[k].push({ template: g.template, entries: g.entries, fp, u: start + fp.width / 2, seed, alcove });
+      hall[k].push({
+        template: g.template,
+        entries: g.entries,
+        fp,
+        u: start + fp.width / 2,
+        seed,
+        alcove,
+      });
       hall.used[k] = start + fp.width - END;
     }
 
@@ -407,7 +468,11 @@ export function generate(input: Input): Plan {
       doors.push({ a: fr.p(0, -DOOR.width / 2), b: fr.p(0, DOOR.width / 2), rooms: [parent, id] });
       if (h === 0) {
         // Its name over the way in, on the lobby's side, and where to stand: just inside.
-        signs.push({ text: wing.label, at: v3(add(at, f, -WALL / 2 - 0.01), DOOR.height + 0.5), yaw: r3(yawOf(neg(f))) });
+        signs.push({
+          text: wing.label,
+          at: v3(add(at, f, -WALL / 2 - 0.01), DOOR.height + 0.5),
+          yaw: r3(yawOf(neg(f))),
+        });
         wings.push({
           path: wing.path,
           label: wing.label,
@@ -418,18 +483,52 @@ export function generate(input: Input): Plan {
       // The long walls, with a doorway to each room of its own off them.
       const doorsOn = (k: 'left' | 'right') => hall[k].filter((p) => p.alcove).map((p) => p.u);
       side(fr.p(0, -half), fr.p(length, -half), doorsOn('left'), id);
-      side(fr.p(length, half), fr.p(0, half), doorsOn('right').map((u) => length - u), id);
+      side(
+        fr.p(length, half),
+        fr.p(0, half),
+        doorsOn('right').map((u) => length - u),
+        id,
+      );
       side(fr.p(length, -half), fr.p(length, half), more, id);
 
       const r = fr.r;
       for (const p of hall.left)
         if (p.alcove) alcoveOff(id, wing.label, fr.p(p.u, -half), f, neg(r), p);
-        else hangOn(id, `${id}-l-${p.u.toFixed(2)}`, fr.p(p.u, -half), r, p.fp, p.template, p.entries, p.seed);
+        else
+          hangOn(
+            id,
+            `${id}-l-${p.u.toFixed(2)}`,
+            fr.p(p.u, -half),
+            r,
+            p.fp,
+            p.template,
+            p.entries,
+            p.seed,
+          );
       for (const p of hall.right)
         if (p.alcove) alcoveOff(id, wing.label, fr.p(p.u, half), f, r, p);
-        else hangOn(id, `${id}-r-${p.u.toFixed(2)}`, fr.p(p.u, half), neg(r), p.fp, p.template, p.entries, p.seed);
+        else
+          hangOn(
+            id,
+            `${id}-r-${p.u.toFixed(2)}`,
+            fr.p(p.u, half),
+            neg(r),
+            p.fp,
+            p.template,
+            p.entries,
+            p.seed,
+          );
       for (const p of hall.floor)
-        standAt(id, `${id}-f-${p.u.toFixed(2)}`, fr.p(p.u, 0), neg(f), p.fp, p.template, p.entries, p.seed);
+        standAt(
+          id,
+          `${id}-f-${p.u.toFixed(2)}`,
+          fr.p(p.u, 0),
+          neg(f),
+          p.fp,
+          p.template,
+          p.entries,
+          p.seed,
+        );
       // Art on what's left of the long walls, now and then.
       for (const k of ['left', 'right'] as const) {
         let u = END + hall.used[k] + (hall.used[k] ? GAP : 0);
@@ -441,7 +540,16 @@ export function generate(input: Input): Plan {
           if (chance < input.filler.density) {
             const v = k === 'left' ? -half : half;
             const n = k === 'left' ? r : neg(r);
-            hangOn(id, `${id}-${k}-art-${i}`, fr.p(u + a.fp.width / 2, v), n, a.fp, a.template, [], a.seed);
+            hangOn(
+              id,
+              `${id}-${k}-art-${i}`,
+              fr.p(u + a.fp.width / 2, v),
+              n,
+              a.fp,
+              a.template,
+              [],
+              a.seed,
+            );
           }
           u += a.fp.width + GAP;
           i++;
@@ -457,8 +565,11 @@ export function generate(input: Input): Plan {
       if (!hall.floor.length) {
         const a = art(`${id}-middle`, 'floor');
         const sculpture = rng(a.seed ^ 0x27d4eb2d)() < input.filler.density;
-        if (sculpture) standAt(id, `${id}-middle`, fr.p(length / 2, 0), neg(f), a.fp, a.template, [], a.seed);
-        const benchAt = sculpture ? [length / 2 - 2.6, length / 2 + 2.6].filter((u) => u > 2 && u < length - 2) : [length / 2];
+        if (sculpture)
+          standAt(id, `${id}-middle`, fr.p(length / 2, 0), neg(f), a.fp, a.template, [], a.seed);
+        const benchAt = sculpture
+          ? [length / 2 - 2.6, length / 2 + 2.6].filter((u) => u > 2 && u < length - 2)
+          : [length / 2];
         for (const u of benchAt) {
           const p = fr.p(u, 0);
           benches.push({ at: [r3(p[0]), r3(p[1])], yaw: r3(yawOf(r)) });
@@ -467,14 +578,29 @@ export function generate(input: Input): Plan {
         }
       }
       // Two strips for the crew, between the middle and each long wall.
-      lanes.push({ id: `${id}-a`, room: id, at: fr.p(END, -0.9), along: f, length: length - 2 * END, width: 2.3 });
-      lanes.push({ id: `${id}-b`, room: id, at: fr.p(length - END, 0.9), along: neg(f), length: length - 2 * END, width: 2.3 });
+      lanes.push({
+        id: `${id}-a`,
+        room: id,
+        at: fr.p(END, -0.9),
+        along: f,
+        length: length - 2 * END,
+        width: 2.3,
+      });
+      lanes.push({
+        id: `${id}-b`,
+        room: id,
+        at: fr.p(length - END, 0.9),
+        along: neg(f),
+        length: length - 2 * END,
+        width: 2.3,
+      });
       // And ways through for them: on from the hall before (the lobby's lane, on the east and
       // west), back the way they came, and round at the far end.
       if (h > 0) {
         link(`${parent}-a`, 'end', `${id}-a`, 'start');
         link(`${id}-b`, 'end', `${parent}-b`, 'start');
-      } else if (s === 'w' || s === 'e') link('lobby', s === 'w' ? 'start' : 'end', `${id}-a`, 'start');
+      } else if (s === 'w' || s === 'e')
+        link('lobby', s === 'w' ? 'start' : 'end', `${id}-a`, 'start');
       else link(`${id}-b`, 'end', `${id}-a`, 'start');
       if (!more) link(`${id}-a`, 'end', `${id}-b`, 'start');
 

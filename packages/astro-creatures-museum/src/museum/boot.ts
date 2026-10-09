@@ -35,6 +35,7 @@ import { Grid } from '../nav/grid';
 import type { Entry, Hung, Plan, Room } from '../plan/types';
 import { type Caption, Hud } from './hud';
 import { Kit, build } from './kit';
+import { ownBuilding } from './own';
 import { type Look, Materials } from './materials';
 import { Pages } from './page';
 import { Player } from './player';
@@ -120,6 +121,12 @@ async function run(plan: Plan, hud: Hud, materials: Materials, look: Look) {
     if (o.name.startsWith('skylight:')) o.castShadow = false;
   });
   scene.add(building.group);
+  // A building of the site's own, in place of the kit's walls and floors.
+  if (plan.building) {
+    const own = await ownBuilding(plan, materials);
+    scene.add(own.group);
+    building.floors.push(...own.floors);
+  }
 
   const videos = new Videos();
   const ctx = makeCtx(kit, materials, look, videos, renderer.capabilities.getMaxAnisotropy());

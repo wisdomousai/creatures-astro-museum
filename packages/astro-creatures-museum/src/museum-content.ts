@@ -3,6 +3,8 @@
 import { getImage } from 'astro:assets';
 import { getCollection, type CollectionEntry } from 'astro:content';
 import type { ImageMetadata } from 'astro';
+import { readFileSync } from 'node:fs';
+import { authored, readGlb } from './plan/authored';
 import { generate } from './plan/generate';
 import type { Entry, Picture, Plan } from './plan/types';
 import { getPosts, hasCaseStudy, page } from './lib';
@@ -127,11 +129,22 @@ export async function museumPlan(): Promise<Plan> {
   );
   const about = await page('about');
   const contact = await page('contact');
-  return generate({
+  const input = {
     title: site.title,
     wings,
     about: await entry('pages', 'about', { ...about.data, title: about.data.title }, 'about-wall', url('/about'), true, site.author),
     contact: await entry('pages', 'contact', contact.data, 'front-desk', url('/contact'), true, site.email),
     filler: site.filler,
+  };
+  if (!site.building || !site.buildingFile) return generate(input);
+  // A building of the site's own: its plan from its names (plan/authored.ts).
+  const { plan, report } = authored({
+    ...input,
+    building: url(site.building),
+    gltf: readGlb(readFileSync(site.buildingFile)),
   });
+  for (const n of report.notes) console.warn(`museum: ${site.building}: ${n}`);
+  if (report.problems.length)
+    throw new Error(`museum: ${site.building} can't be walked yet:\n  ${report.problems.join('\n  ')}`);
+  return plan;
 }

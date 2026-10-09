@@ -12,6 +12,8 @@
     "check": "npm run check -w starter -- --tsconfig ../tsconfig.check.json",
     "test": "node --test \"packages/*/test/*.test.mjs\"",
     "kit": "sh blender/build.sh",
+    "building": "sh blender/buildings/build.sh",
+    "museum:check": "node packages/astro-creatures-museum/bin/check-building.mjs",
     "format": "prettier --write --ignore-unknown ."
   },
   "devDependencies": {

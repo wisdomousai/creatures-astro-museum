@@ -33,7 +33,9 @@ const input = (works = 12, posts = 15) => ({
       path: '/projects',
       label: 'Works',
       entries: entries('projects', works).map((e, i) =>
-        i % 5 === 2 ? { ...e, room: true, gallery: [{ src: '/g.webp', width: 900, height: 1200 }] } : e,
+        i % 5 === 2
+          ? { ...e, room: true, gallery: [{ src: '/g.webp', width: 900, height: 1200 }] }
+          : e,
       ),
     },
     { path: '/blog', label: 'Library', entries: entries('blog', posts, 'bookshelf') },
@@ -50,7 +52,9 @@ test('the same content makes the same museum', () => {
 test('every page is hung, once', () => {
   const plan = generate(input());
   // (A room of its own's gallery hangs as plates of the page: key#1...)
-  const keys = plan.hung.flatMap((h) => h.entries.map((e) => e.key)).filter((k) => !k.includes('#'));
+  const keys = plan.hung
+    .flatMap((h) => h.entries.map((e) => e.key))
+    .filter((k) => !k.includes('#'));
   assert.equal(new Set(keys).size, keys.length);
   assert.equal(keys.length, 12 + 15 + 2);
   // Fifteen posts go on shelves of nine: two shelves.
@@ -61,8 +65,16 @@ test('no two rooms overlap', () => {
   const plan = generate({
     ...input(40, 40),
     wings: [
-      { path: '/a', label: 'A', entries: entries('a', 40).map((e, i) => ({ ...e, room: i % 3 === 0 })) },
-      { path: '/b', label: 'B', entries: entries('b', 40).map((e, i) => ({ ...e, room: i % 4 === 1 })) },
+      {
+        path: '/a',
+        label: 'A',
+        entries: entries('a', 40).map((e, i) => ({ ...e, room: i % 3 === 0 })),
+      },
+      {
+        path: '/b',
+        label: 'B',
+        entries: entries('b', 40).map((e, i) => ({ ...e, room: i % 4 === 1 })),
+      },
       { path: '/c', label: 'C', entries: entries('c', 40, 'plinth-object') },
       { path: '/d', label: 'D', entries: entries('d', 10) },
     ],
@@ -85,7 +97,10 @@ test('everything hung is on a wall of its room, inside it', () => {
     assert.ok(z >= room.min[1] - 0.2 && z <= room.max[1] + 0.2, h.slot.id);
     if (h.slot.mount === 'floor') continue;
     assert.ok(h.slot.at[1] - h.slot.height / 2 >= -1e-6, `${h.slot.id} is in the floor`);
-    assert.ok(h.slot.at[1] + h.slot.height / 2 <= plan.height, `${h.slot.id} is through the ceiling`);
+    assert.ok(
+      h.slot.at[1] + h.slot.height / 2 <= plan.height,
+      `${h.slot.id} is through the ceiling`,
+    );
   }
 });
 
@@ -98,7 +113,10 @@ test('every exhibit can be walked to from the way in', () => {
     const path = grid.path(from, to);
     assert.ok(path.length >= 2, `no way to ${h.slot.id}`);
     for (let k = 1; k < path.length; k++)
-      assert.ok(grid.isClear(path[k - 1], path[k]), `the way to ${h.slot.id} goes through something`);
+      assert.ok(
+        grid.isClear(path[k - 1], path[k]),
+        `the way to ${h.slot.id} goes through something`,
+      );
   }
 });
 
@@ -120,7 +138,10 @@ test('walking into a wall stops at it', () => {
   const b = plan.blocks[plan.blocks.length - 1];
   const mid = [(b.min[0] + b.max[0]) / 2, (b.min[1] + b.max[1]) / 2];
   const [bx, bz] = collide(plan, [mid[0], b.min[1] - 0.6], mid);
-  assert.ok(!(bx > b.min[0] && bx < b.max[0] && bz > b.min[1] && bz < b.max[1]), 'went into a bench');
+  assert.ok(
+    !(bx > b.min[0] && bx < b.max[0] && bz > b.min[1] && bz < b.max[1]),
+    'went into a bench',
+  );
 });
 
 test('nothing hangs over a post (where walls meet)', () => {
@@ -154,7 +175,10 @@ test('lanes lie inside their rooms, and links join lane ends once each', () => {
       for (const d of [0, l.width]) {
         const x = l.at[0] + l.along[0] * s + back[0] * d;
         const z = l.at[1] + l.along[1] * s + back[1] * d;
-        assert.ok(x > room.min[0] && x < room.max[0] && z > room.min[1] && z < room.max[1], `${l.id} leaves ${room.id}`);
+        assert.ok(
+          x > room.min[0] && x < room.max[0] && z > room.min[1] && z < room.max[1],
+          `${l.id} leaves ${room.id}`,
+        );
       }
   }
   const ends = new Set();

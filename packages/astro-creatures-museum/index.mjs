@@ -67,6 +67,7 @@ export default function museum(options = {}) {
     wings: options.wings ?? WINGS,
     filler: { density: 0.6, seed: 'museum', ...options.filler },
     building: options.building ?? null,
+    buildingFile: null,
     templates: options.templates ?? [],
     crew: {
       roster: ['bolt', 'dog', 'cat', 'corgi', 'hedgehog', 'owl'],
@@ -95,6 +96,8 @@ export default function museum(options = {}) {
     hooks: {
       'astro:config:setup': ({ config: astro, updateConfig, injectRoute }) => {
         root = fileURLToPath(astro.root);
+        if (config.building)
+          config.buildingFile = join(fileURLToPath(astro.publicDir), config.building.replace(/^\//, ''));
         const has = (/** @type {string} */ name) => astro.integrations.some((i) => i.name === name);
         updateConfig({
           integrations: [

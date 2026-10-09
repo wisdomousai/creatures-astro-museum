@@ -156,6 +156,8 @@ export interface Plan {
   lanes: Lane[];
   links: Link[];
   spawn: View;
+  /** A building of the site's own (authored.ts): the file to show, instead of the kit's. */
+  building?: string;
   /** Where each wing starts (its first hall's doorway), by the wing's path ('/blog'). */
   wings: { path: string; label: string; view: View }[];
 }

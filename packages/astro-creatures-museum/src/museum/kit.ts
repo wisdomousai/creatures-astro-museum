@@ -143,9 +143,14 @@ export function build(plan: Plan, kit: Kit, materials: Materials): Building {
   const wings = [...new Set(plan.rooms.map((r) => r.wing))];
   for (const r of plan.rooms) paint.set(r.id, materials.room(wings.indexOf(r.wing)));
 
+  // A building of the site's own brings its own walls, floors and ceilings (own.ts): the
+  // kit only hangs the signs.
+  const own = !!plan.building;
+  const floors: Object3D[] = [];
+
   // The walls: a metre at a time (the last one cut to fit), lintels over doorways.
   const posts = new Map<string, V2>();
-  for (const w of plan.walls) {
+  for (const w of own ? [] : plan.walls) {
     const dx = w.b[0] - w.a[0];
     const dz = w.b[1] - w.a[1];
     const len = Math.hypot(dx, dz);
@@ -165,8 +170,7 @@ export function build(plan: Plan, kit: Kit, materials: Materials): Building {
   for (const p of posts.values()) parts.add('post', place(p[0], 0, p[1]));
 
   // Skylights down the middle of every room, every four metres.
-  const floors: Object3D[] = [];
-  for (const r of plan.rooms) {
+  for (const r of own ? [] : plan.rooms) {
     const w = r.max[0] - r.min[0];
     const d = r.max[1] - r.min[1];
     const cx = (r.min[0] + r.max[0]) / 2;
@@ -202,7 +206,7 @@ export function build(plan: Plan, kit: Kit, materials: Materials): Building {
     group.add(floor, ceiling);
   }
   // The floors in the doorways (between two rooms' floors).
-  for (const door of plan.doors) {
+  for (const door of own ? [] : plan.doors) {
     const dx = door.b[0] - door.a[0];
     const dz = door.b[1] - door.a[1];
     const len = Math.hypot(dx, dz);

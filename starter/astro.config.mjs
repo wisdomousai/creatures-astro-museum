@@ -21,6 +21,9 @@ export default defineConfig({
       ],
       // Generated art between the exhibits: how much of the spare wall it takes.
       filler: { density: 0.6, seed: 'lorem' },
+      // Or a building of your own, made in Blender (blender/buildings/README.md), from
+      // public/. The sample's is there: `MUSEUM_BUILDING=1 npm run dev` walks it.
+      building: process.env.MUSEUM_BUILDING ? '/museum/building.glb' : undefined,
       // Who wanders the halls: `npx @wisdomousai/creatures list` says who there is.
       crew: { roster: ['bolt', 'dog', 'cat', 'corgi', 'hedgehog', 'owl'], look: 'colour' },
     }),
