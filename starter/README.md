@@ -17,7 +17,8 @@ arrow keys look round. Off the lobby is a wing
 of halls per collection: projects hang as framed pictures that play their loops while you
 stand in front of them, and posts are books on shelves. Generated art fills the spare wall.
 Click an exhibit to go and stand before it, then step in, and its page opens over the halls
-at its own address. Toy robots wander about. The plain site is always one click away
+at its own address. Toy robots wander about: hold on to one to drag it, and drag the birds
+up to fly. The plain site is always one click away
 (**Plain site**, or `?flat`), and it's what search engines see.
 
 It all comes from [`@wisdomousai/astro-creatures-museum`](https://www.npmjs.com/package/@wisdomousai/astro-creatures-museum).

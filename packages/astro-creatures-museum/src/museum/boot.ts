@@ -4,7 +4,7 @@
 // closed. Clicking walks; clicking an exhibit goes to stand before it and shows its
 // caption, from which its page opens over the halls.
 import './museum.css';
-import { Roam } from '@wisdomousai/creatures';
+import { type Character, Roam } from '@wisdomousai/creatures';
 import {
   ACESFilmicToneMapping,
   Color,
@@ -47,6 +47,10 @@ const BASE = import.meta.env.BASE_URL.replace(/\/$/, '');
 const HOME = BASE || '/';
 /** How far a click may wander and still be a click, not a drag (px). */
 const CLICK = 5;
+/** Pressed on one of the crew this long (ms), or dragged this far (px), it's taken up and
+ * goes after the pointer till it's let go (as on a page). */
+const HOLD = 220;
+const DRAG = 8;
 
 interface Exhibit {
   hung: Hung;
@@ -167,8 +171,19 @@ async function run(plan: Plan, hud: Hud, materials: Materials, look: Look) {
   // The crew, about the halls: not for visitors who'd rather nothing moved (unless they've
   // asked for them: ?crew, kept).
   // (They walk the plan's lanes, through its doorways; the sun casts their shadows.)
+  const rooms = new Map(plan.rooms.map((r) => [r.id, r]));
   const roam = new Roam(scene, {
-    lanes: plan.lanes,
+    // (One held may be taken anywhere in its room, clear of the walls.)
+    lanes: plan.lanes.map((l) => {
+      const r = rooms.get(l.room);
+      const floor: [number, number, number, number] | undefined = r && [
+        r.min[0] + 0.35,
+        r.min[1] + 0.35,
+        r.max[0] - 0.35,
+        r.max[1] - 0.35,
+      ];
+      return { ...l, floor };
+    }),
     links: plan.links,
     models: `${BASE}/creatures/`,
     roster: config.crew.roster,
@@ -277,9 +292,13 @@ async function run(plan: Plan, hud: Hud, materials: Materials, look: Look) {
   const ray = new Raycaster();
   const ndc = new Vector2();
   const targets = [...picks, ...building.floors];
-  const under = (x: number, y: number) => {
+  const aim = (x: number, y: number) => {
     ndc.set((x / innerWidth) * 2 - 1, -(y / innerHeight) * 2 + 1);
     ray.setFromCamera(ndc, camera);
+    return ray.ray;
+  };
+  const under = (x: number, y: number) => {
+    aim(x, y);
     const who = roam.pick(ray.ray);
     if (who) return { kind: 'crew' as const, who };
     const hit = ray.intersectObjects(targets, true)[0];
@@ -315,11 +334,36 @@ async function run(plan: Plan, hud: Hud, materials: Materials, look: Look) {
   scene.add(marker);
 
   const canvas = hud.canvas;
-  let down: { x: number; y: number; moved: number } | null = null;
+  // Pressed on: the floor (or an exhibit) to look round by dragging, or one of the crew,
+  // to take it up and about by holding on.
+  let down: {
+    x: number;
+    y: number;
+    moved: number;
+    who: Character | null;
+    timer: number;
+    held: boolean;
+  } | null = null;
   let hovered: Object3D | null = null;
+  const takeUp = () => {
+    if (!down?.who || down.held) return;
+    clearTimeout(down.timer);
+    down.held = roam.grab(down.who, aim(down.x, down.y));
+    if (down.held) canvas.dataset.over = 'held';
+  };
+  const letGo = () => {
+    if (down) clearTimeout(down.timer);
+    if (down?.held) {
+      roam.drop();
+      canvas.dataset.over = 'crew';
+    }
+  };
   canvas.addEventListener('pointerdown', (e) => {
     if (e.button !== 0 || pages.mode === 'read' || player.open) return;
-    down = { x: e.clientX, y: e.clientY, moved: 0 };
+    const u = under(e.clientX, e.clientY);
+    const who = u?.kind === 'crew' ? u.who : null;
+    down = { x: e.clientX, y: e.clientY, moved: 0, who, held: false, timer: 0 };
+    if (who) down.timer = window.setTimeout(takeUp, HOLD);
     canvas.setPointerCapture(e.pointerId);
   });
   canvas.addEventListener('pointermove', (e) => {
@@ -327,17 +371,20 @@ async function run(plan: Plan, hud: Hud, materials: Materials, look: Look) {
       const dx = e.clientX - down.x;
       const dy = e.clientY - down.y;
       down.moved += Math.abs(dx) + Math.abs(dy);
+      if (down.who && !down.held && down.moved > DRAG) takeUp();
       down.x = e.clientX;
       down.y = e.clientY;
-      if (down.moved > CLICK) walker.drag(dx, dy);
+      if (down.held) roam.drag(aim(e.clientX, e.clientY));
+      else if (!down.who && down.moved > CLICK) walker.drag(dx, dy);
       return;
     }
     hoverAt = [e.clientX, e.clientY];
   });
   canvas.addEventListener('pointerup', (e) => {
     const was = down;
+    letGo();
     down = null;
-    if (!was || was.moved > CLICK) return;
+    if (!was || was.held || was.moved > CLICK) return;
     const u = under(e.clientX, e.clientY);
     if (!u) return;
     if (u.kind === 'crew') roam.poke(u.who);
@@ -351,7 +398,11 @@ async function run(plan: Plan, hud: Hud, materials: Materials, look: Look) {
       marker.material.opacity = 1;
     }
   });
-  canvas.addEventListener('pointercancel', () => (down = null));
+  for (const type of ['pointercancel', 'lostpointercapture'])
+    canvas.addEventListener(type, () => {
+      letGo();
+      down = null;
+    });
   // Hovering: worked out once a frame at most.
   let hoverAt: [number, number] | null = null;
   const hover = () => {

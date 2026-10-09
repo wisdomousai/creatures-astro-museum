@@ -151,7 +151,8 @@ from those names, and stops with a list of what's wrong if it can't.
 The robots are [@wisdomousai/creatures](https://www.npmjs.com/package/@wisdomousai/creatures)'
 own, walking lanes of floor in the halls (`Roam`). They turn up where you aren't looking,
 go from hall to hall through the doorways, and watch you go by. Click one and it notices.
-Click again and it does a trick. Their models are served from your site, out of
+Click again and it does a trick. Hold on to one and drag it about the room; drag a bird up
+and let go, and it flies. Their models are served from your site, out of
 `node_modules`.
 
 MIT.

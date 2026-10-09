@@ -33,8 +33,16 @@
   cursor: crosshair;
 }
 
-.m-canvas:is([data-over='exhibit'], [data-over='art'], [data-over='crew']) {
+.m-canvas:is([data-over='exhibit'], [data-over='art']) {
   cursor: pointer;
+}
+
+.m-canvas[data-over='crew'] {
+  cursor: grab;
+}
+
+.m-canvas[data-over='held'] {
+  cursor: grabbing;
 }
 
 /* A button like a toy's: chunky, round, standing proud of what it's on, and pressed in
