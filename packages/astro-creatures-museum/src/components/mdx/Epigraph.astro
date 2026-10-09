@@ -1,0 +1,38 @@
+---
+interface Props {
+  author?: string;
+}
+
+const { author } = Astro.props;
+---
+
+<aside class="epigraph">
+  <div class="body">
+    <slot />
+  </div>
+  {author && <p class="author caption">{author}</p>}
+</aside>
+
+<style>
+  .epigraph {
+    margin: 0 0 2.5rem;
+  }
+
+  .body {
+    font-size: var(--text-md);
+    font-style: italic;
+    line-height: 1.45;
+  }
+
+  .body :global(p) {
+    margin: 0;
+  }
+
+  .body :global(p + p) {
+    margin-top: 0.75rem;
+  }
+
+  .author {
+    margin: 0.75rem 0 0;
+  }
+</style>

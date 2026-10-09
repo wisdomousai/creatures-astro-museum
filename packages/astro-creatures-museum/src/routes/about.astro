@@ -1,0 +1,22 @@
+---
+import Film from '../components/mdx/Film.astro';
+import { render } from 'astro:content';
+import Article from '../layouts/Article.astro';
+import { page as words } from '../lib';
+import { formatDate } from '../site';
+
+const page = await words('about');
+const { Content, headings } = await render(page);
+---
+
+<Article
+  title={page.data.title}
+  description={page.data.description}
+  headings={headings}
+  type="website"
+>
+  <Fragment slot="meta">
+    {page.data.updated && <p>Updated {formatDate(page.data.updated)}</p>}
+  </Fragment>
+  <Content components={{ Film }} />
+</Article>

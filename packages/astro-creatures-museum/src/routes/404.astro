@@ -1,0 +1,11 @@
+---
+import Base from '../layouts/Base.astro';
+import PageHeader from '../components/PageHeader.astro';
+import { url } from '../site';
+---
+
+<Base title="Page not found">
+  <PageHeader title="Page not found" lede="This address doesn't lead anywhere. It may have moved.">
+    <p class="caption"><a href={url('/')}>Go to the home page</a></p>
+  </PageHeader>
+</Base>

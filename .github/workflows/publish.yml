@@ -1,0 +1,38 @@
+name: Publish
+
+# Publishing a release on GitHub (its tag is v0.1.1) puts that version of
+# @wisdomousai/astro-creatures-museum on npm, by trusted publishing (no token; npm adds provenance).
+# The first version goes up by hand.
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+          package-manager-cache: false
+      - name: The tag is the package's version
+        run: test "v$(node -p "require('./packages/astro-creatures-museum/package.json').version")" = "$GITHUB_REF_NAME"
+      - name: Is it on npm already?
+        id: npm
+        run: |
+          if npm view "@wisdomousai/astro-creatures-museum@${GITHUB_REF_NAME#v}" version; then
+            echo published=true >> "$GITHUB_OUTPUT"
+          fi
+      - if: steps.npm.outputs.published != 'true'
+        run: npm ci
+      - if: steps.npm.outputs.published != 'true'
+        run: npx astro check --tsconfig ../tsconfig.check.json && npx astro build
+        working-directory: starter
+      - if: steps.npm.outputs.published != 'true'
+        run: npm publish --workspace packages/astro-creatures-museum --access public

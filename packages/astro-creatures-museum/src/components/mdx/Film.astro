@@ -1,0 +1,42 @@
+---
+/**
+ * A film on a page, in a frame like the museum's, with its controls:
+ *   <Film src="/museum/lorem-film.mp4" poster="/museum/lorem.jpg" caption="Lorem, 2026" />
+ * Without its script (or JavaScript) it's the browser's own player.
+ */
+import '../../film/film.css';
+import { url } from '../../site';
+
+interface Props {
+  /** The film: under public/ ('/museum/lorem-film.mp4'), or anywhere. */
+  src: string;
+  poster?: string;
+  caption?: string;
+  /** What the film is, for screen readers, if there's no caption. */
+  title?: string;
+}
+
+const { src, poster, caption, title } = Astro.props;
+---
+
+<figure class="m-film" data-film aria-label={caption ?? title}>
+  <video src={url(src)} poster={poster && url(poster)} preload="metadata" playsinline controls
+  ></video>
+  {caption && <figcaption>{caption}</figcaption>}
+</figure>
+
+<script>
+  import { filmControls } from '../../film/controls';
+
+  function enhance() {
+    for (const figure of document.querySelectorAll<HTMLElement>('[data-film]:not([data-ready])')) {
+      const video = figure.querySelector('video');
+      if (!video) continue;
+      figure.dataset.ready = '';
+      filmControls(figure, video);
+    }
+  }
+  enhance();
+  // (A page opened in the museum: its <main> is new, its films not yet dressed.)
+  document.addEventListener('museum:page', enhance);
+</script>

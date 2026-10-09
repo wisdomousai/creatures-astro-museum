@@ -1,0 +1,26 @@
+---
+import Base from '../../layouts/Base.astro';
+import PageHeader from '../../components/PageHeader.astro';
+import ProjectCards from '../../components/ProjectCards.astro';
+import { getProjects } from '../../lib';
+import { site } from '../../site';
+
+const title = site.nav.find((n) => n.href === '/projects')?.label ?? 'Projects';
+const items = await getProjects();
+---
+
+<Base title={title} description={site.description} museum="walk">
+  <PageHeader title={title} />
+  <div class="page grid">
+    <div class="main-wide">
+      <ProjectCards items={items} />
+    </div>
+  </div>
+</Base>
+
+<style>
+  .main-wide {
+    padding-top: 2rem;
+    border-top: 1px solid var(--rule-strong);
+  }
+</style>

@@ -1,0 +1,49 @@
+---
+import Base from '../../layouts/Base.astro';
+import PageHeader from '../../components/PageHeader.astro';
+import PostList from '../../components/PostList.astro';
+import { getPosts } from '../../lib';
+import { site } from '../../site';
+
+const title = site.nav.find((n) => n.href === '/blog')?.label ?? 'Blog';
+const posts = await getPosts();
+const count = `${posts.length} ${posts.length === 1 ? 'post' : 'posts'}, newest first`;
+---
+
+<Base title={title} description={site.description} museum="walk">
+  <PageHeader title={title} />
+  <div class="page grid">
+    <p class="rail caption count">
+      {count}
+    </p>
+    <div class="main">
+      <PostList posts={posts} />
+    </div>
+  </div>
+</Base>
+
+<style>
+  .count {
+    margin: 0;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--rule-strong);
+  }
+
+  .main {
+    border-top: 1px solid var(--rule-strong);
+  }
+
+  .main > :global(ol > li:first-child) {
+    border-top: 0;
+  }
+
+  @media (max-width: 59.99rem) {
+    .main {
+      border-top: 0;
+    }
+
+    .count {
+      padding-bottom: 0.5rem;
+    }
+  }
+</style>

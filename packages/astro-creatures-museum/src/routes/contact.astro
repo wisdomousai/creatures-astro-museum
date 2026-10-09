@@ -1,0 +1,27 @@
+---
+import Base from '../layouts/Base.astro';
+import PageHeader from '../components/PageHeader.astro';
+import { render } from 'astro:content';
+import { page } from '../lib';
+import { site } from '../site';
+
+const words = await page('contact');
+const { Content } = await render(words);
+---
+
+<Base title={words.data.title} description={words.data.description}>
+  <PageHeader title={words.data.title} />
+  <div class="page grid">
+    <div class="main prose">
+      <Content />
+      <p><a href={`mailto:${site.email}`}>{site.email}</a></p>
+    </div>
+  </div>
+</Base>
+
+<style>
+  .main {
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--rule-strong);
+  }
+</style>

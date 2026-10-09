@@ -1,0 +1,82 @@
+---
+import { getImage } from 'astro:assets';
+import { render } from 'astro:content';
+import JsonLd from '../../components/JsonLd.astro';
+import Article from '../../layouts/Article.astro';
+import Epigraph from '../../components/mdx/Epigraph.astro';
+import Film from '../../components/mdx/Film.astro';
+import PullQuote from '../../components/mdx/PullQuote.astro';
+import { getPosts } from '../../lib';
+import { formatDate, site, url as at } from '../../site';
+
+export async function getStaticPaths() {
+  const posts = await getPosts();
+  return posts.map((post) => ({ params: { slug: post.id }, props: { post } }));
+}
+
+const { post } = Astro.props;
+const { title, description, date, updated, tags, canonical, cover } = post.data;
+const { Content, headings } = await render(post);
+
+const url = new URL(Astro.url.pathname, Astro.site).href;
+const coverUrl =
+  cover && new URL((await getImage({ src: cover, width: 1200 })).src, Astro.site).href;
+const structuredData = {
+  '@context': 'https://schema.org',
+  '@graph': [
+    {
+      '@type': 'BlogPosting',
+      headline: title,
+      description,
+      url,
+      mainEntityOfPage: canonical ?? url,
+      datePublished: date.toISOString(),
+      dateModified: (updated ?? date).toISOString(),
+      inLanguage: 'en',
+      keywords: tags,
+      ...(coverUrl && { image: coverUrl }),
+      author: {
+        '@type': 'Person',
+        name: site.author,
+        url: new URL(at('/about'), Astro.site).href,
+      },
+    },
+    {
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        { '@type': 'ListItem', position: 1, name: 'Home', item: new URL(at('/'), Astro.site).href },
+        {
+          '@type': 'ListItem',
+          position: 2,
+          name: 'Blog',
+          item: new URL(at('/blog'), Astro.site).href,
+        },
+        { '@type': 'ListItem', position: 3, name: title, item: url },
+      ],
+    },
+  ],
+};
+---
+
+<Article
+  title={title}
+  description={description}
+  kicker={`No. ${post.number}`}
+  canonical={canonical}
+  headings={headings}
+>
+  <JsonLd slot="head" data={structuredData} />
+
+  <Fragment slot="meta">
+    <p><time datetime={date.toISOString()}>{formatDate(date)}</time></p>
+    {updated && <p>Updated {formatDate(updated)}</p>}
+    <p>{post.minutes} min read</p>
+  </Fragment>
+
+  <Content components={{ Epigraph, Film, PullQuote }} />
+
+  <Fragment slot="footer">
+    {tags.length > 0 && <p>Filed under {tags.join(', ')}</p>}
+    <p><a href={at('/blog')}>All posts</a></p>
+  </Fragment>
+</Article>

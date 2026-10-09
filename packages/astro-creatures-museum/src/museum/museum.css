@@ -1,0 +1,401 @@
+/* What's over the museum's halls (hud.ts): toy-like, as the building is. Its colours come
+   from the look (materials.ts): --m-trim, --m-brass, --m-velvet, --m-paper, --m-ink. */
+
+#museum {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  font-family: var(--font-sans);
+  color: var(--m-ink);
+  pointer-events: none;
+}
+
+#museum :is(button, a, nav, section, .m-canvas) {
+  pointer-events: auto;
+}
+
+.m-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  touch-action: none;
+  cursor: grab;
+  outline: none;
+}
+
+.m-canvas:active {
+  cursor: grabbing;
+}
+
+.m-canvas[data-over='floor'] {
+  cursor: crosshair;
+}
+
+.m-canvas:is([data-over='exhibit'], [data-over='art'], [data-over='crew']) {
+  cursor: pointer;
+}
+
+/* A button like a toy's: chunky, round, standing proud of what it's on, and pressed in
+   when it's pressed. */
+.m-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4em;
+  padding: 0.5em 1.05em 0.55em;
+  border: 2px solid var(--m-trim);
+  border-radius: 999px;
+  background: var(--m-paper);
+  color: var(--m-trim);
+  font: 600 0.875rem/1 var(--font-sans);
+  letter-spacing: 0.01em;
+  text-decoration: none;
+  box-shadow: 0 3px 0 var(--m-trim);
+  cursor: pointer;
+  transition:
+    transform 0.08s,
+    box-shadow 0.08s,
+    background 0.15s;
+}
+
+.m-button[hidden] {
+  display: none;
+}
+
+.m-button:hover {
+  background: color-mix(in srgb, var(--m-brass) 28%, var(--m-paper));
+  color: var(--m-trim);
+}
+
+.m-button:active {
+  transform: translateY(3px);
+  box-shadow: 0 0 0 var(--m-trim);
+}
+
+.m-button:focus-visible {
+  outline: 3px solid var(--m-brass);
+  outline-offset: 2px;
+}
+
+.m-top {
+  position: absolute;
+  inset: 0 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  pointer-events: none;
+}
+
+.m-where {
+  margin: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  padding: 0.45rem 1rem 0.5rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--m-paper) 88%, transparent);
+  backdrop-filter: blur(6px);
+  box-shadow: 0 3px 0 var(--m-trim);
+  border: 2px solid var(--m-trim);
+  pointer-events: auto;
+}
+
+.m-brand {
+  font: 400 1.25rem/1 var(--font-serif);
+  color: var(--m-ink);
+  text-decoration: none;
+}
+
+.m-room {
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--m-trim);
+  opacity: 0.8;
+}
+
+.m-actions {
+  display: flex;
+  gap: 0.6rem;
+  pointer-events: auto;
+}
+
+.m-index {
+  position: absolute;
+  top: 4.5rem;
+  right: 1.25rem;
+  width: min(22rem, calc(100vw - 2.5rem));
+  max-height: calc(100vh - 6rem);
+  overflow-y: auto;
+  padding: 1rem 1.25rem;
+  border: 2px solid var(--m-trim);
+  border-radius: 18px;
+  background: var(--m-paper);
+  box-shadow: 0 4px 0 var(--m-trim);
+}
+
+.m-index ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.m-index > ul > li + li {
+  margin-top: 0.9rem;
+}
+
+.m-index > ul > li > a {
+  font: 400 1.15rem/1.3 var(--font-serif);
+}
+
+.m-index ul ul {
+  margin-top: 0.3rem;
+  padding-left: 0.9rem;
+  border-left: 2px solid color-mix(in srgb, var(--m-trim) 25%, transparent);
+}
+
+.m-index ul ul a {
+  display: block;
+  padding: 0.18rem 0;
+  font-size: 0.875rem;
+  color: var(--m-ink);
+  text-decoration: none;
+}
+
+.m-index ul ul a:hover {
+  color: var(--m-velvet);
+}
+
+.m-hint {
+  position: absolute;
+  left: 50%;
+  bottom: 1.5rem;
+  transform: translateX(-50%);
+  margin: 0;
+  padding: 0.5rem 1rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--m-trim) 88%, transparent);
+  color: var(--m-paper);
+  font-size: 0.85rem;
+  white-space: nowrap;
+  transition: opacity 0.8s;
+}
+
+.m-hint kbd {
+  display: inline-block;
+  min-width: 1.4em;
+  margin: 0 0.1em;
+  padding: 0.05em 0.3em;
+  border-radius: 5px;
+  background: var(--m-paper);
+  color: var(--m-trim);
+  font: 600 0.75rem/1.4 var(--font-mono);
+  text-align: center;
+}
+
+.m-hint.m-gone {
+  opacity: 0;
+}
+
+.m-caption {
+  position: absolute;
+  left: 1.25rem;
+  bottom: 1.25rem;
+  width: min(26rem, calc(100vw - 2.5rem));
+  padding: 1rem 1.25rem 1.1rem;
+  border: 2px solid var(--m-trim);
+  border-radius: 18px;
+  background: var(--m-paper);
+  box-shadow: 0 4px 0 var(--m-trim);
+  animation: m-rise 0.35s cubic-bezier(0.2, 0.9, 0.3, 1.2);
+}
+
+.m-caption[hidden] {
+  display: none;
+}
+
+.m-kicker {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  opacity: 0.65;
+}
+
+.m-title {
+  margin: 0.25rem 0 0.35rem;
+  font: 400 1.5rem/1.1 var(--font-serif);
+}
+
+.m-summary {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.45;
+  opacity: 0.85;
+}
+
+.m-do {
+  display: flex;
+  gap: 0.6rem;
+  margin: 0.9rem 0 0;
+}
+
+.m-watch {
+  background: var(--m-velvet);
+  color: var(--m-paper);
+}
+
+.m-close {
+  position: fixed;
+  z-index: 30;
+  top: calc(max(2vh, 0.75rem) + 0.75rem);
+  left: max(1.5rem, calc(50% - 34rem + 0.75rem));
+  display: none;
+}
+
+html[data-museum='read'] .m-close {
+  display: inline-flex;
+}
+
+html[data-museum='read'] :is(.m-caption, .m-hint, .m-index) {
+  display: none;
+}
+
+/* Under the page you're reading, the halls dim and stay put. */
+html[data-museum='read'] .m-canvas {
+  filter: brightness(0.55) saturate(0.8);
+  transition: filter 0.4s;
+}
+
+/* (Focused when a page opens, for screen readers: no ring needed.) */
+html[data-museum] #main h1[tabindex='-1']:focus {
+  outline: none;
+}
+
+html[data-museum='read'] #main {
+  animation: m-up 0.45s cubic-bezier(0.2, 0.8, 0.2, 1);
+  padding-top: 3.5rem;
+}
+
+.m-loading {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  background: var(--m-paper);
+  font: 400 1.5rem var(--font-serif);
+  transition: opacity 0.6s;
+}
+
+.m-loading[hidden] {
+  display: grid;
+  opacity: 0;
+  pointer-events: none;
+}
+
+@keyframes m-rise {
+  from {
+    transform: translateY(1rem);
+    opacity: 0;
+  }
+}
+
+@keyframes m-up {
+  from {
+    transform: translateY(40vh);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .m-caption,
+  /* (Focused when a page opens, for screen readers: no ring needed.) */
+html[data-museum] #main h1[tabindex='-1']:focus {
+  outline: none;
+}
+
+html[data-museum='read'] #main {
+    animation: none;
+  }
+}
+
+/* ---------- The film player (player.ts; the frame and controls are film/film.css) ---------- */
+
+.m-player {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  padding: 3vh 4vw;
+  background: radial-gradient(
+    ellipse at center,
+    color-mix(in srgb, var(--m-trim) 35%, transparent),
+    color-mix(in srgb, var(--m-trim) 78%, transparent)
+  );
+  animation: m-fade 0.3s ease-out;
+}
+
+.m-player.m-player-out {
+  opacity: 0;
+  transition: opacity 0.25s;
+  pointer-events: none;
+}
+
+.m-player figure {
+  /* As big as fits: 16:10 pictures, the bar and caption under them. */
+  width: min(92vw, calc((94vh - 9rem) * 1.6));
+  margin: 0;
+  animation: m-pop 0.4s cubic-bezier(0.2, 0.9, 0.3, 1.15);
+}
+
+.m-player figcaption {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  font-size: 1.25rem;
+}
+
+.m-player-kicker {
+  font: 600 0.72rem/1 var(--font-sans);
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  opacity: 0.75;
+}
+
+.m-player-close {
+  position: absolute;
+  top: -1rem;
+  right: -1rem;
+  width: 2.6rem;
+  height: 2.6rem;
+  justify-content: center;
+  padding: 0;
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+@keyframes m-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes m-pop {
+  from {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .m-player,
+  .m-player figure {
+    animation: none;
+  }
+}

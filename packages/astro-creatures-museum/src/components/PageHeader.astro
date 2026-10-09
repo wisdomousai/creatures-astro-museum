@@ -1,0 +1,39 @@
+---
+// Top of an index page: title on the grid's main line, optional lede below.
+interface Props {
+  title: string;
+  lede?: string;
+}
+
+const { title, lede } = Astro.props;
+---
+
+<header class="page-header page grid">
+  <div class="main-wide">
+    <h1>{title}</h1>
+    {lede && <p class="lede">{lede}</p>}
+    <slot />
+  </div>
+</header>
+
+<style>
+  .page-header {
+    padding-block: clamp(3rem, 9vw, 7rem) clamp(2.5rem, 6vw, 4.5rem);
+  }
+
+  h1 {
+    margin: 0;
+    font-size: var(--text-xl);
+    font-weight: 300;
+    letter-spacing: -0.02em;
+  }
+
+  .lede {
+    max-width: 32rem;
+    margin: 1.25rem 0 0;
+    color: var(--ink-soft);
+    font-size: var(--text-md);
+    font-style: italic;
+    line-height: 1.4;
+  }
+</style>

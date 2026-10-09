@@ -1,0 +1,24 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      # The starter and the package's own source, together.
+      - run: npx astro check --tsconfig ../tsconfig.check.json
+        working-directory: starter
+      # The layout and the walking (plain TypeScript, in Node).
+      - run: npm test
+      - run: npx astro build
+        working-directory: starter

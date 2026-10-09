@@ -1,0 +1,194 @@
+/* A film in a frame like the museum's: a brass moulding with an ink edge, standing proud
+   (its shadow), the controls on a strip of trim under the picture. Its colours are the
+   museum's look (--m-*, set by the museum); on the flat site, the colour look's own. */
+
+.m-film {
+  --f-trim: var(--m-trim, #27434d);
+  --f-brass: var(--m-brass, #d6aa4c);
+  --f-velvet: var(--m-velvet, #b8403a);
+  --f-paper: var(--m-paper, #f3efe6);
+  position: relative;
+  margin: 2rem 0;
+  padding: 12px;
+  border: 3px solid var(--f-trim);
+  border-radius: 20px;
+  background:
+    linear-gradient(
+      160deg,
+      color-mix(in srgb, var(--f-brass) 70%, white) 0%,
+      var(--f-brass) 35%,
+      color-mix(in srgb, var(--f-brass) 75%, black) 100%
+    );
+  box-shadow:
+    inset 0 2px 0 color-mix(in srgb, white 45%, transparent),
+    inset 0 -3px 0 color-mix(in srgb, black 18%, transparent),
+    0 6px 0 var(--f-trim);
+  outline: none;
+}
+
+.m-film:focus-visible {
+  box-shadow:
+    0 0 0 4px var(--f-paper),
+    0 0 0 7px var(--f-velvet),
+    0 6px 0 var(--f-trim);
+}
+
+.m-film video {
+  display: block;
+  width: 100%;
+  height: auto;
+  /* (Its own shape once it's known; till then, the usual one.) */
+  aspect-ratio: auto 16 / 10;
+  border: 3px solid var(--f-trim);
+  border-bottom: 0;
+  border-radius: 9px 9px 0 0;
+  background: var(--f-trim);
+  cursor: pointer;
+}
+
+.m-film figcaption {
+  margin: 0.6rem 0.25rem 0;
+  color: var(--f-trim);
+  font: 400 1rem/1.3 var(--font-serif);
+}
+
+.m-film-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.55rem 0.8rem 0.6rem 0.6rem;
+  border: 3px solid var(--f-trim);
+  border-top: 0;
+  border-radius: 0 0 9px 9px;
+  background: var(--f-trim);
+  color: var(--f-paper);
+}
+
+.m-film-bar button {
+  display: grid;
+  place-items: center;
+  flex: none;
+  padding: 0;
+  border: 2px solid var(--f-paper);
+  border-radius: 999px;
+  cursor: pointer;
+  transition:
+    transform 0.08s,
+    box-shadow 0.08s;
+}
+
+.m-film-bar button:active {
+  transform: translateY(2px);
+  box-shadow: none !important;
+}
+
+.m-film-bar button:focus-visible,
+.m-film-scrub:focus-visible {
+  outline: 3px solid var(--f-brass);
+  outline-offset: 2px;
+}
+
+.m-film-bar svg {
+  width: 60%;
+  height: 60%;
+  fill: currentColor;
+  stroke: currentColor;
+  stroke-width: 0;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.m-film-play {
+  width: 2.6rem;
+  height: 2.6rem;
+  background: var(--f-velvet);
+  color: var(--f-paper);
+  box-shadow: 0 3px 0 color-mix(in srgb, black 35%, var(--f-trim));
+}
+
+.m-film-small {
+  width: 2.05rem;
+  height: 2.05rem;
+  background: transparent;
+  color: var(--f-paper);
+}
+
+/* The sound and whole-screen icons are lines, not shapes. */
+.m-film-small svg {
+  fill: none;
+  stroke-width: 2;
+}
+
+.m-film-small:hover {
+  background: color-mix(in srgb, var(--f-paper) 15%, transparent);
+}
+
+.m-film-time {
+  flex: none;
+  min-width: 6.5em;
+  font: 500 0.8rem/1 var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  opacity: 0.9;
+}
+
+/* The scrubber: a rounded track, brass up to where it's got to, a brass knob. */
+.m-film-scrub {
+  --p: 0%;
+  flex: 1;
+  min-width: 4rem;
+  height: 1.6rem;
+  margin: 0;
+  background: transparent;
+  appearance: none;
+  cursor: pointer;
+}
+
+.m-film-scrub::-webkit-slider-runnable-track {
+  height: 10px;
+  border: 2px solid var(--f-paper);
+  border-radius: 999px;
+  background: linear-gradient(to right, var(--f-brass) var(--p), transparent var(--p));
+}
+
+.m-film-scrub::-moz-range-track {
+  height: 6px;
+  border: 2px solid var(--f-paper);
+  border-radius: 999px;
+  background: linear-gradient(to right, var(--f-brass) var(--p), transparent var(--p));
+}
+
+.m-film-scrub::-webkit-slider-thumb {
+  width: 20px;
+  height: 20px;
+  margin-top: -7px;
+  border: 3px solid var(--f-trim);
+  border-radius: 50%;
+  background: var(--f-brass);
+  box-shadow: 0 0 0 2px var(--f-paper);
+  appearance: none;
+}
+
+.m-film-scrub::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border: 3px solid var(--f-trim);
+  border-radius: 50%;
+  background: var(--f-brass);
+  box-shadow: 0 0 0 2px var(--f-paper);
+}
+
+/* The whole screen: the frame round it all, the picture as big as it'll go. */
+.m-film:fullscreen {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  margin: 0;
+  border-radius: 0;
+}
+
+.m-film:fullscreen video {
+  flex: 1;
+  min-height: 0;
+  object-fit: contain;
+}

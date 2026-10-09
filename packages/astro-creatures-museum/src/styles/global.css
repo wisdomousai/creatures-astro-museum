@@ -1,0 +1,297 @@
+@import '@fontsource-variable/newsreader/opsz.css';
+@import '@fontsource-variable/newsreader/opsz-italic.css';
+@import '@fontsource-variable/schibsted-grotesk';
+@import '@fontsource/maple-mono/400.css';
+
+/* ---------- Tokens ----------
+   Monochrome: light paper, near-black ink, greys for everything quieter.
+   There is no accent colour; "accent" is only the hover shade. */
+
+:root {
+  --paper: #f4f4f1;
+  --paper-deep: #e9e9e5;
+  --card: #ffffff;
+  --ink: #111111;
+  --ink-soft: #55554f;
+  --ink-faint: #6e6e68;
+  --rule: #e0e0db;
+  --rule-strong: #d6d6d1;
+  --accent: #55554f;
+
+  --font-serif: 'Newsreader Variable', Georgia, serif;
+  --font-sans: 'Schibsted Grotesk Variable', system-ui, sans-serif;
+  --font-mono: 'Maple Mono', ui-monospace, monospace;
+
+  /* Scale: body 1.0625rem, stepping up by ~1.25 (major third). */
+  --text-sm: 0.8125rem;
+  --text-base: 1.0625rem;
+  --text-md: 1.1875rem;
+  --text-lg: clamp(1.3rem, 1.7vw, 1.5rem);
+  --text-xl: clamp(1.75rem, 3vw, 2.35rem);
+  --text-display: clamp(2.25rem, 5vw, 4rem);
+
+  /* The breathing room round the page's edge. */
+  --band: clamp(0.75rem, 2vw, 1.5rem);
+
+  --measure: 38rem;
+  --page: 78rem;
+  --gutter: calc(var(--band) + clamp(0.125rem, 4vw - 0.75rem, 2.75rem));
+  --gap: clamp(1rem, 2vw, 2rem);
+
+  color-scheme: light dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper: #1f1f1d;
+    --paper-deep: #282826;
+    --card: #2b2b28;
+    --ink: #ecece8;
+    --ink-soft: #b9b9b2;
+    --ink-faint: #95958e;
+    --rule: #383834;
+    --rule-strong: #4c4c46;
+    --accent: #b9b9b2;
+  }
+}
+
+/* ---------- Base ---------- */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  scroll-padding-top: calc(var(--band) + 1.5rem);
+}
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-serif);
+  font-size: var(--text-base);
+  font-optical-sizing: auto;
+  line-height: 1.62;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+img,
+svg,
+video {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+a {
+  color: inherit;
+  text-decoration-color: color-mix(in srgb, currentColor 30%, transparent);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.22em;
+}
+
+a:hover {
+  color: var(--accent);
+  text-decoration-color: currentColor;
+}
+
+:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 3px;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--accent) 22%, transparent);
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-weight: 400;
+  line-height: 1.1;
+  text-wrap: balance;
+}
+
+p {
+  text-wrap: pretty;
+}
+
+/* In the museum (src/lib/mode.ts) the halls take the window. A page you're reading opens
+   over them (museum/page.css); one you're not is out of the way, as are the header and
+   footer, which the museum has its own ways round. */
+html[data-museum] :is(.site-header, .site-footer, .skip.visually-hidden) {
+  display: none;
+}
+
+html[data-museum='walk'] #main {
+  display: none;
+}
+
+html[data-museum] body {
+  overflow: hidden;
+}
+
+/* A page read in the museum: a sheet over the halls, which show dimmed round it. */
+html[data-museum='read'] #main {
+  position: fixed;
+  z-index: 20;
+  inset: max(2vh, 0.75rem) 0 0;
+  width: min(68rem, 100% - 1.5rem);
+  margin-inline: auto;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: var(--paper);
+  border-radius: 18px 18px 0 0;
+  box-shadow: 0 -0.5rem 3rem rgb(0 0 0 / 0.3);
+  padding-bottom: 4rem;
+}
+
+/* ---------- Layout ----------
+   A 12-column page. The left rail (cols 1–3) carries structure — numbers,
+   dates, contents; the main column (cols 4–10) carries content. Below
+   60rem everything stacks into one column. */
+
+.page {
+  width: 100%;
+  max-width: calc(var(--page) + 2 * var(--gutter));
+  margin-inline: auto;
+  padding-inline: var(--gutter);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  column-gap: var(--gap);
+}
+
+.grid > * {
+  grid-column: 1 / -1;
+}
+
+@media (min-width: 60rem) {
+  .grid > .rail {
+    grid-column: 1 / 4;
+  }
+
+  .grid > .main {
+    grid-column: 4 / 11;
+  }
+
+  .grid > .main-wide {
+    grid-column: 4 / -1;
+  }
+}
+
+/* Small grotesk caption for meta: dates, counts, rail text. */
+.caption {
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  line-height: 1.45;
+  color: var(--ink-faint);
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* ---------- Prose ---------- */
+
+.prose {
+  max-width: var(--measure);
+  font-size: 1.125rem;
+  line-height: 1.65;
+}
+
+.prose > * + * {
+  margin-top: 1.15em;
+}
+
+.prose p,
+.prose ul,
+.prose ol {
+  margin-bottom: 0;
+}
+
+.prose h2 {
+  margin: 2.8em 0 0;
+  font-size: var(--text-lg);
+  font-weight: 400;
+  letter-spacing: -0.01em;
+}
+
+.prose h3 {
+  margin: 2em 0 0;
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  font-weight: 600;
+}
+
+.prose h2 + *,
+.prose h3 + * {
+  margin-top: 0.75em;
+}
+
+.prose ul,
+.prose ol {
+  padding-left: 1.2em;
+}
+
+.prose li + li {
+  margin-top: 0.4em;
+}
+
+.prose li::marker {
+  color: var(--ink-faint);
+}
+
+.prose blockquote {
+  margin-inline: 0;
+  padding-left: 1.2rem;
+  border-left: 1px solid var(--ink);
+  font-style: italic;
+}
+
+.prose hr {
+  width: 4rem;
+  margin: 3.5em 0;
+  border: 0;
+  border-top: 1px solid var(--ink);
+}
+
+.prose img {
+  border-radius: 2px;
+}
+
+.prose :not(pre) > code {
+  padding: 0.1em 0.3em;
+  border-radius: 3px;
+  background: var(--paper-deep);
+  font-family: var(--font-mono);
+  font-size: 0.82em;
+}
+
+.prose table {
+  display: block;
+  overflow-x: auto;
+  border-collapse: collapse;
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+}
+
+.prose th,
+.prose td {
+  padding: 0.55rem 0.8rem;
+  border-bottom: 1px solid var(--rule);
+  text-align: left;
+}

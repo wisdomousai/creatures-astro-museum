@@ -1,0 +1,10 @@
+{
+  "extends": "astro/tsconfigs/strict",
+  "include": [
+    "starter/.astro/types.d.ts",
+    "starter/**/*",
+    "packages/astro-creatures-museum/src/**/*",
+    "packages/astro-creatures-museum/index.d.ts"
+  ],
+  "exclude": ["**/dist", "**/node_modules"]
+}

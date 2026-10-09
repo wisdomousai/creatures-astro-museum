@@ -1,0 +1,90 @@
+---
+import type { CollectionEntry } from 'astro:content';
+import { Image } from 'astro:assets';
+import { domainOf, projectHref } from '../lib';
+
+interface Props {
+  items: CollectionEntry<'projects'>[];
+}
+
+const { items } = Astro.props;
+---
+
+<ul class="project-cards">
+  {
+    items.map((item) => {
+      const href = projectHref(item);
+      const external = /^https?:/.test(href);
+      return (
+        <li id={item.id}>
+          <a href={href} rel={external ? 'noopener' : undefined}>
+            {item.data.cover && <Image class="cover" src={item.data.cover} alt="" width={640} />}
+            <span class="title">{item.data.title}</span>
+            <span class="summary">{item.data.summary}</span>
+            <span class="where">{external ? domainOf(href) : 'Read more'}</span>
+          </a>
+        </li>
+      );
+    })
+  }
+</ul>
+
+<style>
+  .project-cards {
+    display: grid;
+    /* A page can ask for narrower cards with --card-min. */
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--card-min, 16rem)), 1fr));
+    gap: 1.25rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    font-family: var(--font-sans);
+  }
+
+  a {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    height: 100%;
+    padding: 1.5rem;
+    border: 1px solid var(--rule);
+    border-radius: 20px;
+    background: var(--card);
+    text-decoration: none;
+  }
+
+  a:hover {
+    border-color: var(--ink);
+    color: var(--ink);
+  }
+
+  .cover {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 16 / 10;
+    margin-bottom: 0.5rem;
+    border-radius: 12px;
+    background: var(--paper-deep);
+    object-fit: cover;
+  }
+
+  .title {
+    font-size: 1.375rem;
+    font-weight: 600;
+    line-height: 1.2;
+    letter-spacing: -0.01em;
+  }
+
+  .summary {
+    flex: 1;
+    color: var(--ink-soft);
+    font-size: 1rem;
+    line-height: 1.5;
+  }
+
+  .where {
+    margin-top: 0.4rem;
+    color: var(--ink-faint);
+    font-size: 0.8125rem;
+  }
+</style>

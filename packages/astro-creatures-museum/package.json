@@ -1,0 +1,62 @@
+{
+  "name": "@wisdomousai/astro-creatures-museum",
+  "version": "0.1.0",
+  "description": "An Astro integration: your pages as a walkable 3D museum, with toy robots wandering its halls. Framed pictures play as you stand in front of them; step into one and its page opens.",
+  "type": "module",
+  "license": "MIT",
+  "author": "wisdomousai",
+  "homepage": "https://github.com/wisdomousai/creatures-astro-museum#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/wisdomousai/creatures-astro-museum.git",
+    "directory": "packages/astro-creatures-museum"
+  },
+  "keywords": [
+    "astro-integration",
+    "withastro",
+    "astro",
+    "theme",
+    "threejs",
+    "museum",
+    "portfolio",
+    "gallery",
+    "creatures",
+    "robots"
+  ],
+  "exports": {
+    ".": {
+      "types": "./index.d.ts",
+      "default": "./index.mjs"
+    },
+    "./content": "./src/content.ts",
+    "./components/*": "./src/components/mdx/*",
+    "./templates": "./src/exhibits/api.ts"
+  },
+  "files": [
+    "index.mjs",
+    "index.d.ts",
+    "src",
+    "assets"
+  ],
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "peerDependencies": {
+    "astro": "^7.1.3"
+  },
+  "dependencies": {
+    "@astrojs/mdx": "^7.0.3",
+    "@astrojs/rss": "^4.0.19",
+    "@astrojs/sitemap": "^3.7.3",
+    "@fontsource-variable/newsreader": "^5.3.0",
+    "@fontsource-variable/schibsted-grotesk": "^5.3.0",
+    "@fontsource/maple-mono": "^5.3.0",
+    "@wisdomousai/creatures": "^0.5.0",
+    "astro-expressive-code": "^0.44.1",
+    "three": "^0.186.1"
+  },
+  "devDependencies": {
+    "@types/three": "^0.186.0",
+    "astro": "^7.1.3"
+  }
+}

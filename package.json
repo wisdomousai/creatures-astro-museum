@@ -1,0 +1,37 @@
+{
+  "name": "creatures-astro-museum",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "packages/*",
+    "starter"
+  ],
+  "scripts": {
+    "dev": "npm run dev -w starter",
+    "build": "npm run build -w starter",
+    "check": "npm run check -w starter -- --tsconfig ../tsconfig.check.json",
+    "test": "node --test \"packages/*/test/*.test.mjs\"",
+    "kit": "sh blender/build.sh",
+    "format": "prettier --write --ignore-unknown ."
+  },
+  "devDependencies": {
+    "prettier": "^3.9.6",
+    "prettier-plugin-astro": "^0.14.1"
+  },
+  "prettier": {
+    "plugins": [
+      "prettier-plugin-astro"
+    ],
+    "printWidth": 100,
+    "singleQuote": true,
+    "trailingComma": "all",
+    "overrides": [
+      {
+        "files": "*.astro",
+        "options": {
+          "parser": "astro"
+        }
+      }
+    ]
+  }
+}

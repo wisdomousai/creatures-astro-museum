@@ -1,0 +1,45 @@
+---
+interface Props {
+  cite?: string;
+}
+
+const { cite } = Astro.props;
+---
+
+<figure class="pullquote">
+  <blockquote>
+    <slot />
+  </blockquote>
+  {cite && <figcaption class="caption">{cite}</figcaption>}
+</figure>
+
+<style>
+  .pullquote {
+    margin: 2.75rem 0;
+    padding-block: 1.25rem;
+    border-block: 1px solid var(--ink);
+  }
+
+  blockquote {
+    margin: 0;
+    font-size: var(--text-lg);
+    font-weight: 300;
+    line-height: 1.2;
+    letter-spacing: -0.01em;
+  }
+
+  blockquote :global(p) {
+    margin: 0;
+  }
+
+  figcaption {
+    margin-top: 0.75rem;
+  }
+
+  /* On wide screens, break out of the measure into the right margin. */
+  @media (min-width: 75rem) {
+    .pullquote {
+      width: calc(100% + 10rem);
+    }
+  }
+</style>

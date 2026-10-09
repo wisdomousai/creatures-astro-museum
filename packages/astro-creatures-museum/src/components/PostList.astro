@@ -1,0 +1,103 @@
+---
+import type { Post } from '../lib';
+import { formatDate, url } from '../site';
+
+interface Props {
+  posts: Post[];
+  /** Compact rows for the home page: no description. */
+  compact?: boolean;
+}
+
+const { posts, compact = false } = Astro.props;
+---
+
+<ol class="post-list" class:list={{ compact }}>
+  {
+    posts.map((post) => (
+      <li>
+        <a href={url(`/blog/${post.id}`)}>
+          <span class="no caption">No. {post.number}</span>
+          <span class="title">{post.data.title}</span>
+          {!compact && <span class="description">{post.data.description}</span>}
+          <span class="meta caption">
+            <time datetime={post.data.date.toISOString()}>{formatDate(post.data.date)}</time>,{' '}
+            {post.minutes} min read
+          </span>
+        </a>
+      </li>
+    ))
+  }
+</ol>
+
+<style>
+  .post-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  li {
+    border-top: 1px solid var(--rule);
+  }
+
+  a {
+    display: grid;
+    grid-template-columns: 4.5rem minmax(0, 1fr);
+    column-gap: 1rem;
+    padding-block: 1.5rem 1.75rem;
+    text-decoration: none;
+  }
+
+  a > :not(.no) {
+    grid-column: 2;
+  }
+
+  .no {
+    grid-row: 1 / span 3;
+    padding-top: 0.55rem;
+  }
+
+  .title {
+    font-size: var(--text-lg);
+    line-height: 1.15;
+    letter-spacing: -0.01em;
+    text-wrap: balance;
+  }
+
+  .compact .title {
+    font-size: var(--text-md);
+  }
+
+  .description {
+    max-width: 34rem;
+    margin-top: 0.6rem;
+    color: var(--ink-soft);
+  }
+
+  .meta {
+    margin-top: 0.6rem;
+  }
+
+  a:hover .title {
+    color: var(--accent);
+  }
+
+  .compact a {
+    padding-block: 1rem 1.15rem;
+  }
+
+  .compact .no {
+    padding-top: 0.3rem;
+  }
+
+  @media (max-width: 40rem) {
+    a {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .no {
+      padding: 0 0 0.3rem;
+    }
+  }
+</style>

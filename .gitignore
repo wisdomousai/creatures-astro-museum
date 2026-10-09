@@ -1,0 +1,18 @@
+# build output
+dist/
+.astro/
+
+# dependencies
+node_modules/
+
+# environment
+.env
+.env.*
+
+# OS / editors
+.DS_Store
+.idea/
+
+# Blender's leftovers
+*.blend1
+__pycache__/
