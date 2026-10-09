@@ -1,10 +1,11 @@
 // The museum, opened behind the page (src/lib/mode.ts): the plan the site was built with
 // (/museum.json), the building from the kit, every exhibit from its template, the visitor
 // at the door (or at the exhibit whose page this is), and the halls drawn till the tab is
-// closed. Clicking walks; clicking an exhibit goes to stand before it and shows its
-// caption, from which its page opens over the halls.
+// closed. Pulling the floor walks; clicking an exhibit goes to stand before it and shows
+// its caption, from which its page opens over the halls. A right-click on one of the crew
+// (or a long press) is its menu of tricks.
 import './museum.css';
-import { type Character, Roam } from '@wisdomousai/creatures';
+import type { Character } from '@wisdomousai/creatures';
 import {
   ACESFilmicToneMapping,
   Color,
@@ -18,7 +19,6 @@ import {
   PlaneGeometry,
   PMREMGenerator,
   Raycaster,
-  RingGeometry,
   Scene,
   SRGBColorSpace,
   type Texture,
@@ -30,16 +30,19 @@ import {
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import config from 'virtual:astro-creatures-museum/config';
 import { template } from '../exhibits/registry';
-import type { Built, Ctx } from '../exhibits/types';
+import type { Built, CrewHook, Ctx } from '../exhibits/types';
 import { Grid } from '../nav/grid';
 import type { Entry, Hung, Plan, Room } from '../plan/types';
 import { type Caption, Hud } from './hud';
-import { Kit, build } from './kit';
+import { Kit, benchSeats, build } from './kit';
 import { ownBuilding } from './own';
 import { type Look, Materials } from './materials';
 import { Pages } from './page';
 import { Player } from './player';
+import { Crews } from './crews';
 import { fontsReady, label } from './text';
+import { Themed } from './themed';
+import { shutTricks, tricks } from './tricks';
 import { Videos } from './videos';
 import { Walker } from './walk';
 
@@ -48,9 +51,11 @@ const HOME = BASE || '/';
 /** How far a click may wander and still be a click, not a drag (px). */
 const CLICK = 5;
 /** Pressed on one of the crew this long (ms), or dragged this far (px), it's taken up and
- * goes after the pointer till it's let go (as on a page). */
+ * goes after the pointer till it's let go (as on a page). A finger only takes it up by
+ * dragging: held still this long (ms), it's the menu. */
 const HOLD = 220;
 const DRAG = 8;
+const LONG = 550;
 
 interface Exhibit {
   hung: Hung;
@@ -136,16 +141,43 @@ async function run(plan: Plan, hud: Hud, materials: Materials, look: Look) {
     building.floors.push(...own.floors);
   }
 
+  // The crew, about the halls, and those living in the themed rooms (the cat café's cats,
+  // the aquarium's fish): not for visitors who'd rather nothing moved (unless they've asked
+  // for them: ?crew, kept). Before the exhibits: a living painting has one of them in it.
+  const roam = new Crews(scene, plan, {
+    models: `${BASE}/creatures/`,
+    roster: config.crew.roster,
+    max: config.crew.max[1],
+    look,
+    seats: benchSeats(plan, kit),
+  });
+  roam.enabled = wantCrew();
+
   const videos = new Videos();
-  const ctx = makeCtx(kit, materials, look, videos, renderer.capabilities.getMaxAnisotropy());
+  const crew: CrewHook | null = roam.enabled
+    ? {
+        roster: config.crew.roster,
+        models: `${BASE}/creatures/`,
+        look,
+        eye: camera.position,
+        jumpOut: (c, at, land) => roam.jumpOut(c, at, land),
+      }
+    : null;
+  const ctx = makeCtx(kit, materials, look, videos, renderer.capabilities.getMaxAnisotropy(), crew);
 
   // Every exhibit, built by its template and put in its slot. One that fails is left out.
   const exhibits: Exhibit[] = [];
   const pickOf = new Map<Object3D, Exhibit>();
+  // (In a themed room, in its own finish: no gilt frames on a mountain top.)
+  const themeOf = new Map(plan.rooms.map((r) => [r.id, r.theme]));
   await Promise.all(
     plan.hung.map(async (hung) => {
       try {
-        const built = await template(hung.template).build(ctx, hung);
+        const there = materials.themed(themeOf.get(hung.slot.room));
+        const built = await template(hung.template).build(
+          there === materials ? ctx : { ...ctx, materials: there },
+          hung,
+        );
         const o = built.object;
         o.position.set(...hung.slot.at);
         o.rotation.y = hung.slot.yaw;
@@ -168,34 +200,11 @@ async function run(plan: Plan, hud: Hud, materials: Materials, look: Look) {
   /** Frames drawn since a page opened over the halls (they stop, a little after). */
   let still = 0;
 
-  // The crew, about the halls: not for visitors who'd rather nothing moved (unless they've
-  // asked for them: ?crew, kept).
-  // (They walk the plan's lanes, through its doorways; the sun casts their shadows.)
-  const rooms = new Map(plan.rooms.map((r) => [r.id, r]));
-  const roam = new Roam(scene, {
-    // (One held may be taken anywhere in its room, clear of the walls.)
-    lanes: plan.lanes.map((l) => {
-      const r = rooms.get(l.room);
-      const floor: [number, number, number, number] | undefined = r && [
-        r.min[0] + 0.35,
-        r.min[1] + 0.35,
-        r.max[0] - 0.35,
-        r.max[1] - 0.35,
-      ];
-      return { ...l, floor };
-    }),
-    links: plan.links,
-    models: `${BASE}/creatures/`,
-    roster: config.crew.roster,
-    max: config.crew.max[1],
-    look,
-    castShadows: true,
-    // All over the place: soon, often, two to a lane, in every room near enough to see.
-    every: [1.2, 4],
-    near: 30,
-    perLane: 2,
-  });
-  roam.enabled = wantCrew();
+  // The themed rooms, dressed as their places: brought in once the museum's open, the
+  // nearest first.
+  const themed = new Themed(plan, materials, look, roam.enabled);
+  themed.onFurnished = (room, seats) => roam.furnished(room, seats);
+  scene.add(themed.group);
 
   const grid = new Grid(plan);
   const walker = new Walker(camera, grid);
@@ -225,6 +234,7 @@ async function run(plan: Plan, hud: Hud, materials: Materials, look: Look) {
     hud.show(null);
   };
   pages.onOpen = () => {
+    shutTricks();
     walker.release();
     hud.release();
     walker.stop();
@@ -287,8 +297,9 @@ async function run(plan: Plan, hud: Hud, materials: Materials, look: Look) {
   };
   hud.setIndex(plan);
 
-  // Pointing: drag to look round, click to go. What's under the pointer: an exhibit (and
-  // which of its parts: a book on a shelf), or the floor.
+  // Pointing: pull the floor to walk, click an exhibit to go to it. What's under the
+  // pointer: one of the crew, an exhibit (and which of its parts: a book on a shelf), or
+  // the floor.
   const ray = new Raycaster();
   const ndc = new Vector2();
   const targets = [...picks, ...building.floors];
@@ -321,21 +332,9 @@ async function run(plan: Plan, hud: Hud, materials: Materials, look: Look) {
     return null;
   };
 
-  const marker = new Mesh(
-    new RingGeometry(0.16, 0.24, 40),
-    new MeshBasicMaterial({
-      color: palette.roles.Brass,
-      transparent: true,
-      opacity: 0,
-      depthWrite: false,
-    }),
-  );
-  marker.rotation.x = -Math.PI / 2;
-  scene.add(marker);
-
   const canvas = hud.canvas;
-  // Pressed on: the floor (or an exhibit) to look round by dragging, or one of the crew,
-  // to take it up and about by holding on.
+  // Pressed on: the floor (or an exhibit) to pull it and walk, or one of the crew, to take
+  // it up and about by holding on.
   let down: {
     x: number;
     y: number;
@@ -343,6 +342,9 @@ async function run(plan: Plan, hud: Hud, materials: Materials, look: Look) {
     who: Character | null;
     timer: number;
     held: boolean;
+    /** Its menu came up (a long press): letting go does nothing more. */
+    menu: boolean;
+    touch: boolean;
   } | null = null;
   let hovered: Object3D | null = null;
   const takeUp = () => {
@@ -357,13 +359,40 @@ async function run(plan: Plan, hud: Hud, materials: Materials, look: Look) {
       roam.drop();
       canvas.dataset.over = 'crew';
     }
+    walker.letGo();
   };
+  // Its tricks, at the pointer. (A long press on some phones is a right-click too: once is
+  // enough.)
+  let menuAt = -Infinity;
+  const menu = (who: Character, x: number, y: number) => {
+    if (performance.now() - menuAt < 800) return;
+    menuAt = performance.now();
+    tricks(hud.root, { x, y }, who, {
+      names: roam.games(who),
+      play: (name) => void roam.play(who, name),
+    });
+  };
+  canvas.addEventListener('contextmenu', (e) => {
+    const u = pages.mode === 'read' || player.open ? null : under(e.clientX, e.clientY);
+    if (u?.kind !== 'crew') return;
+    e.preventDefault();
+    menu(u.who, e.clientX, e.clientY);
+  });
   canvas.addEventListener('pointerdown', (e) => {
     if (e.button !== 0 || pages.mode === 'read' || player.open) return;
     const u = under(e.clientX, e.clientY);
     const who = u?.kind === 'crew' ? u.who : null;
-    down = { x: e.clientX, y: e.clientY, moved: 0, who, held: false, timer: 0 };
-    if (who) down.timer = window.setTimeout(takeUp, HOLD);
+    const touch = e.pointerType === 'touch';
+    down = { x: e.clientX, y: e.clientY, moved: 0, who, held: false, timer: 0, menu: false, touch };
+    if (who && touch) {
+      const at = down;
+      down.timer = window.setTimeout(() => {
+        if (down !== at || at.moved > DRAG) return;
+        at.menu = true;
+        menu(who, at.x, at.y);
+      }, LONG);
+    } else if (who) down.timer = window.setTimeout(takeUp, HOLD);
+    else walker.grip(aim(e.clientX, e.clientY));
     canvas.setPointerCapture(e.pointerId);
   });
   canvas.addEventListener('pointermove', (e) => {
@@ -371,11 +400,11 @@ async function run(plan: Plan, hud: Hud, materials: Materials, look: Look) {
       const dx = e.clientX - down.x;
       const dy = e.clientY - down.y;
       down.moved += Math.abs(dx) + Math.abs(dy);
-      if (down.who && !down.held && down.moved > DRAG) takeUp();
+      if (down.who && !down.held && !down.menu && down.moved > DRAG) takeUp();
       down.x = e.clientX;
       down.y = e.clientY;
       if (down.held) roam.drag(aim(e.clientX, e.clientY));
-      else if (!down.who && down.moved > CLICK) walker.drag(dx, dy);
+      else if (!down.who && down.moved > CLICK) walker.pull(aim(e.clientX, e.clientY));
       return;
     }
     hoverAt = [e.clientX, e.clientY];
@@ -384,18 +413,16 @@ async function run(plan: Plan, hud: Hud, materials: Materials, look: Look) {
     const was = down;
     letGo();
     down = null;
-    if (!was || was.held || was.moved > CLICK) return;
+    if (!was || was.held || was.menu || was.moved > CLICK) return;
+    // A click on the floor does nothing: walking is pulling it.
     const u = under(e.clientX, e.clientY);
-    if (!u) return;
-    if (u.kind === 'crew') roam.poke(u.who);
-    else if (u.kind === 'exhibit') {
+    if (u?.kind === 'crew') roam.poke(u.who);
+    else if (u?.kind === 'exhibit') {
+      // One that does something when it's clicked (a living painting's one jumps out).
+      if (u.ex.built.poke) return u.ex.built.poke();
       // A second click on what's showing steps in.
       if (u.entry && u.entry === shown?.entry && !walker.moving) step(u.entry);
       else go(u.ex, u.entry);
-    } else if (walker.goTo([u.point.x, u.point.z])) {
-      caption(null);
-      marker.position.set(u.point.x, 0.01, u.point.z);
-      marker.material.opacity = 1;
     }
   });
   for (const type of ['pointercancel', 'lostpointercapture'])
@@ -427,7 +454,9 @@ async function run(plan: Plan, hud: Hud, materials: Materials, look: Look) {
 
   addEventListener('keydown', (e) => {
     if (pages.mode === 'read' || player.open || e.metaKey || e.ctrlKey || e.altKey) return;
-    if ((e.target as HTMLElement).closest?.('input, textarea, select, [contenteditable]')) return;
+    if (e.defaultPrevented) return;
+    const typing = 'input, textarea, select, [contenteditable], .m-tricks';
+    if ((e.target as HTMLElement).closest?.(typing)) return;
     walker.key(e.code, true);
     hud.press(e.code, true);
     if (e.code.startsWith('Arrow') || e.code === 'Space') e.preventDefault();
@@ -486,9 +515,8 @@ async function run(plan: Plan, hud: Hud, materials: Materials, look: Look) {
       ex.built.update(dt, Math.max(0, 1 - Math.hypot(walker.x - x, walker.z - z) / 6));
     }
     videos.update(dt, eye, forward);
+    themed.update(dt, eye);
     roam.update(dt, camera);
-    if (marker.material.opacity > 0)
-      marker.material.opacity = Math.max(0, marker.material.opacity - dt * 1.2);
 
     // The sun's shadows follow the visitor, a metre at a time (so they don't shimmer).
     const sx = Math.round(walker.x);
@@ -501,6 +529,7 @@ async function run(plan: Plan, hud: Hud, materials: Materials, look: Look) {
   });
 
   hud.ready();
+  void themed.load([walker.x, walker.z]);
   const debug = {
     plan,
     scene,
@@ -513,6 +542,7 @@ async function run(plan: Plan, hud: Hud, materials: Materials, look: Look) {
     videos,
     player,
     roam,
+    themed,
     exhibits,
     go,
     step,
@@ -540,6 +570,7 @@ function makeCtx(
   look: Look,
   videos: Videos,
   anisotropy: number,
+  crew: CrewHook | null,
 ): Ctx {
   const loader = new TextureLoader();
   const images = new Map<string, Promise<Texture>>();
@@ -548,6 +579,7 @@ function makeCtx(
     kit,
     materials,
     look,
+    crew,
     image(src) {
       let p = images.get(src);
       if (!p) {

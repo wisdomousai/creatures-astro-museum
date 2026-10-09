@@ -5,6 +5,13 @@ order: 5
 role: Qui cillum
 period: '2025–2026'
 stack: [Rust, Blender, TypeScript]
+exhibit:
+  image: ../../assets/projects/lorem.jpg
+  # A room of its own, dressed as a place: aquarium.
+  room: aquarium
+  gallery:
+    - ../../assets/projects/ipsum.jpg
+    - ../../assets/projects/dolor-2.jpg
 ---
 
 Maiores aliqua deleniti numquam porro reiciendis error asperiores ipsa modi. Maiores voluptates

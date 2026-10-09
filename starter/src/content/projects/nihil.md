@@ -5,6 +5,13 @@ order: 4
 role: Aliqua quae
 period: '2025–2026'
 stack: [Python]
+exhibit:
+  image: ../../assets/projects/ipsum.jpg
+  # A room of its own, dressed as a place: jungle.
+  room: jungle
+  gallery:
+    - ../../assets/projects/dolor-1.jpg
+    - ../../assets/projects/lorem.jpg
 ---
 
 Voluptates odio lorem nesciunt aliqua nobis do, cupiditate eius sint adipiscing similique

@@ -8,9 +8,10 @@ import { authored, readGlb } from './plan/authored';
 import own from 'virtual:astro-creatures-museum/templates';
 import { footprint } from './plan/footprints';
 import { generate } from './plan/generate';
-import type { Entry, Picture, Plan } from './plan/types';
+import type { Entry, Picture, Plan, ThemeSpec } from './plan/types';
 import { getPosts, hasCaseStudy, page } from './lib';
 import { formatDate, site, url } from './site';
+import rooms from '../assets/rooms/rooms.json';
 
 /** What any collection's entry might have, as far as the museum is concerned. */
 interface Data {
@@ -29,7 +30,7 @@ interface Data {
     wing?: string;
     order?: number;
     size: 's' | 'm' | 'l';
-    room: boolean;
+    room: boolean | string;
     hidden: boolean;
     image?: ImageMetadata;
     video?: string;
@@ -67,7 +68,8 @@ async function entry(
     kicker,
     template: x?.template ?? template,
     size: x?.size ?? 'm',
-    room: x?.room ?? false,
+    room: Boolean(x?.room),
+    theme: typeof x?.room === 'string' ? x.room : null,
     image: await picture(x?.image ?? data.cover),
     video: x?.video ? url(x.video) : null,
     film: x?.film ? (/^[a-z]+:/i.test(x.film) ? x.film : url(x.film)) : null,
@@ -137,6 +139,8 @@ export async function museumPlan(): Promise<Plan> {
     about: await entry('pages', 'about', { ...about.data, title: about.data.title }, 'about-wall', url('/about'), true, site.author),
     contact: await entry('pages', 'contact', contact.data, 'front-desk', url('/contact'), true, site.email),
     filler: site.filler,
+    // (The themed rooms' sizes and what stands in them, as blender/rooms/ made them.)
+    themes: rooms satisfies Record<string, ThemeSpec>,
     // (The site's own templates say how much room they want; the rest, the built-in's.)
     measure: (template: string, e: Entry | null, r: number) =>
       own.find((t) => t.id === template)?.footprint?.(e, r) ?? footprint(template, e, r),

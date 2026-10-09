@@ -1,7 +1,8 @@
-// The visitor: eyes 1.6 m up, walking. Click somewhere and they glide there round whatever's
-// in the way; walk with W A S D, look round with the arrows or by dragging. Walls and plinths
-// push back. For visitors who'd rather nothing moved, a glide is a cut.
-import { type PerspectiveCamera, Vector3 } from 'three';
+// The visitor: eyes 1.6 m up, walking. Take hold of the floor and pull it to walk (toward
+// you, and on you go; sideways, and you turn), or walk with W A S D and look round with the
+// arrows; sent to an exhibit, they glide there round whatever's in the way. Walls and
+// plinths push back. For visitors who'd rather nothing moved, a glide is a cut.
+import { type PerspectiveCamera, type Ray, Vector3 } from 'three';
 import { collide, type Grid } from '../nav/grid';
 import { EYE } from '../plan/generate';
 import type { V2, V3, View } from '../plan/types';
@@ -11,7 +12,11 @@ const SPEED = 1.5;
 const RUN = 2.8;
 const TURN = 1.3;
 const TILT = 0.9;
-const LOOK = 0.0042;
+/** The floor's taken hold of no further off than this (m), and pulled no nearer than NEAR. */
+const REACH = 25;
+const NEAR = 0.4;
+/** A pull goes through the walls' push in steps no longer than this (m). */
+const STRIDE = 0.2;
 
 export class Walker {
   readonly camera: PerspectiveCamera;
@@ -29,6 +34,9 @@ export class Walker {
     t: number;
   } | null = null;
   private turning: { yaw: number; pitch: number; done?: () => void } | null = null;
+  /** The floor where the pointer took hold (null: above the horizon, so it only turns), the
+   * way it pointed then, and how far off it was last (kept while the pointer's above it). */
+  private held: { p: V2 | null; bearing: number; far: number } | null = null;
   private keys = new Set<string>();
   private calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
   /** Set when the visitor walks or looks on their own (the HUD's hints go). */
@@ -92,17 +100,62 @@ export class Walker {
     this.turning = null;
   }
 
-  /** Dragged by (dx, dy) px. */
-  drag(dx: number, dy: number) {
-    this.stopTurning();
-    this.yaw -= dx * LOOK;
-    this.pitch = clamp(this.pitch - dy * LOOK, -1.1, 1.1);
-    this.onMove?.('look');
+  /** The pointer's taken hold of the floor where its `ray` (from the camera) meets it. */
+  grip(ray: Ray) {
+    this.stop();
+    const o = ray.origin;
+    const d = ray.direction;
+    let p: V2 | null = null;
+    if (d.y < -0.02) {
+      const t = Math.min(-o.y / d.y, REACH / Math.hypot(d.x, d.z));
+      p = [o.x + d.x * t, o.z + d.z * t];
+    }
+    const far = p ? Math.hypot(p[0] - this.x, p[1] - this.z) : REACH;
+    this.held = { p, bearing: bearing(d.x, d.z), far };
   }
 
-  private stopTurning() {
-    this.turning = null;
-    if (this.route) this.route.look = null;
+  /**
+   * The pointer holding the floor has moved (its `ray` now, from the camera as it is): the
+   * visitor moves and turns so the floor they took hold of is under it again. Nearer the
+   * bottom of the view, it's nearer them, so they walk up to it; to one side, they turn.
+   */
+  pull(ray: Ray) {
+    const h = this.held;
+    if (!h) return;
+    const d = ray.direction;
+    // Where the pointer is across the view, as an angle off straight ahead.
+    const off = nearAngle(0, bearing(d.x, d.z) - this.yaw);
+    if (!h.p) {
+      this.yaw = h.bearing - off;
+      this.apply();
+      this.onMove?.('look');
+      return;
+    }
+    // How far off the floor under the pointer is now, so far as the pointer's below the
+    // horizon (above it, as far as it was last).
+    if (d.y < -0.02) h.far = clamp(EYE / Math.tan(-Math.asin(d.y)), NEAR, REACH);
+    const [px, pz] = h.p;
+    const dx = px - this.x;
+    const dz = pz - this.z;
+    const line = Math.hypot(dx, dz) > 0.05 ? bearing(dx, dz) : bearing(d.x, d.z);
+    // Along the line from the held point through where they stand, as far from it as the
+    // pointer says; and turned so it's as far round as the pointer is.
+    const to: V2 = [px + h.far * Math.sin(line), pz + h.far * Math.cos(line)];
+    const was: V2 = [this.x, this.z];
+    const steps = Math.ceil(Math.hypot(to[0] - this.x, to[1] - this.z) / STRIDE);
+    for (let i = 1; i <= steps; i++) {
+      const t = i / steps;
+      const step: V2 = [was[0] + (to[0] - was[0]) * t, was[1] + (to[1] - was[1]) * t];
+      [this.x, this.z] = collide(this.grid.plan, [this.x, this.z], step);
+    }
+    this.yaw = line - off;
+    this.apply();
+    this.onMove?.(steps ? 'walk' : 'look');
+  }
+
+  /** The pointer's let go of the floor. */
+  letGo() {
+    this.held = null;
   }
 
   key(code: string, down: boolean) {
@@ -196,6 +249,8 @@ export class Walker {
   private apply() {
     this.camera.position.set(this.x, EYE, this.z);
     this.camera.rotation.set(this.pitch, this.yaw, 0, 'YXZ');
+    // (Now, not at the next frame: the pointer's next ray, before it, is from here.)
+    this.camera.updateMatrixWorld();
   }
 }
 
@@ -213,6 +268,9 @@ export function aim(from: V3, to: V3): [number, number] {
   const dz = to[2] - from[2];
   return [Math.atan2(-dx, -dz), Math.atan2(dy, Math.hypot(dx, dz))];
 }
+
+/** The yaw that looks along (dx, dz) on the floor. */
+const bearing = (dx: number, dz: number) => Math.atan2(-dx, -dz);
 
 /** `to`, give or take whole turns, nearest to `from` (so a turn goes the short way). */
 function nearAngle(from: number, to: number) {

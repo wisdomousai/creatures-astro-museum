@@ -3,6 +3,7 @@
 // skylights in the ceilings, benches and signs. Each piece is drawn once for all its
 // copies (instanced), whatever room they're in; the walls take their room's paint.
 import {
+  Box3,
   BufferAttribute,
   BufferGeometry,
   Color,
@@ -20,6 +21,7 @@ import {
 } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
+import type { RoamSeat } from '@wisdomousai/creatures';
 import type { Plan, V2 } from '../plan/types';
 import type { Materials } from './materials';
 import { signFace } from './text';
@@ -117,6 +119,29 @@ export class Instancer {
 const WHITE = new Color(1, 1, 1);
 const UP = new Vector3(0, 1, 0);
 
+/** The benches, as somewhere the crew can get up on and sit: each one's top, from the
+ * kit's bench (its length along its own x, before it's turned). */
+export function benchSeats(plan: Plan, kit: Kit): RoamSeat[] {
+  const box = new Box3();
+  for (const part of kit.piece('bench')) {
+    part.geometry.computeBoundingBox();
+    box.union(part.geometry.boundingBox!);
+  }
+  const size = box.getSize(new Vector3());
+  const long = size.x >= size.z;
+  return plan.benches.map((b) => {
+    // (Turned yaw about y, its own +x runs (cos, -sin) on the floor.)
+    const x: [number, number] = [Math.cos(b.yaw), -Math.sin(b.yaw)];
+    return {
+      at: [b.at[0], b.at[1]],
+      height: box.max.y,
+      length: (long ? size.x : size.z) - 0.1,
+      width: (long ? size.z : size.x) - 0.1,
+      along: long ? x : [-x[1], x[0]],
+    };
+  });
+}
+
 /** A matrix: at (x, y, z), turned `yaw` about y, scaled. */
 export function place(x: number, y: number, z: number, yaw = 0, sx = 1, sy = 1, sz = 1) {
   return new Matrix4().compose(
@@ -147,10 +172,13 @@ export function build(plan: Plan, kit: Kit, materials: Materials): Building {
   // kit only hangs the signs.
   const own = !!plan.building;
   const floors: Object3D[] = [];
+  // A themed room brings its own walls, floor and ceiling too (themed.ts): the kit only
+  // gives it a floor to click on, unseen.
+  const themed = new Set(plan.rooms.filter((r) => r.theme).map((r) => r.id));
 
   // The walls: a metre at a time (the last one cut to fit), lintels over doorways.
   const posts = new Map<string, V2>();
-  for (const w of own ? [] : plan.walls) {
+  for (const w of own ? [] : plan.walls.filter((w) => !themed.has(w.room))) {
     const dx = w.b[0] - w.a[0];
     const dz = w.b[1] - w.a[1];
     const len = Math.hypot(dx, dz);
@@ -177,7 +205,7 @@ export function build(plan: Plan, kit: Kit, materials: Materials): Building {
     const cz = (r.min[1] + r.max[1]) / 2;
     const along = w > d ? 0 : 1;
     const len = along === 0 ? w : d;
-    const n = Math.max(1, Math.floor(len / 4));
+    const n = themed.has(r.id) ? 0 : Math.max(1, Math.floor(len / 4));
     for (let i = 0; i < n; i++) {
       const t = (i + 0.5) / n - 0.5;
       const x = along === 0 ? cx + t * len : cx;
@@ -197,6 +225,11 @@ export function build(plan: Plan, kit: Kit, materials: Materials): Building {
     floor.receiveShadow = true;
     floor.userData.floor = r.id;
     floors.push(floor);
+    if (themed.has(r.id)) {
+      floor.visible = false;
+      group.add(floor);
+      continue;
+    }
     const ceiling = new Mesh(
       new PlaneGeometry(w + 0.4, d + 0.4),
       new MeshStandardMaterial({ color: materials.palette.ceiling, roughness: 0.9 }),

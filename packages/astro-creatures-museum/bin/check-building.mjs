@@ -34,6 +34,7 @@ const entry = (key, template = 'framed-picture') => ({
   template,
   size: 'm',
   room: false,
+  theme: null,
   image: null,
   video: null,
   film: null,

@@ -3,6 +3,7 @@
 import own from 'virtual:astro-creatures-museum/templates';
 import { aboutWall, frontDesk } from './templates/lobby';
 import { bookshelf } from './templates/library';
+import { livingPainting } from './templates/living';
 import { fillerPainting, fillerSculpture, plinthObject } from './templates/objects';
 import { framedPicture, plaque, triptych, videoWall } from './templates/pictures';
 import type { ExhibitTemplate } from './types';
@@ -18,6 +19,7 @@ export const BUILT_IN: ExhibitTemplate[] = [
   plinthObject,
   fillerPainting,
   fillerSculpture,
+  livingPainting,
 ];
 
 export const TEMPLATES = new Map<string, ExhibitTemplate>(

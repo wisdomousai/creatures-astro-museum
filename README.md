@@ -12,13 +12,14 @@ Step into an exhibit and its page opens over the halls, at its real address.
 npm create astro@latest -- --template wisdomousai/creatures-astro-museum/starter
 ```
 
-|                                    |                                                                                                                                   |
-| ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| `starter/`                         | The template: lorem-ipsum content, placeholder loops and films, and `astro.config.mjs`.                                           |
-| `packages/astro-creatures-museum/` | [`@wisdomousai/astro-creatures-museum`](packages/astro-creatures-museum/README.md), the integration: pages, the plan, the museum. |
-| `blender/`                         | The kit the halls are built from (`pieces.py`) and [buildings of your own](blender/buildings/README.md).                          |
-| `scripts/placeholders.sh`          | The starter's placeholder pictures and films, made with ffmpeg.                                                                   |
-| `.claude/skills/`                  | `museum-make` (new templates, kit pieces, art, rooms) and `museum-building` (authored buildings).                                 |
+|                                    |                                                                                                                                            |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| `starter/`                         | The template: lorem-ipsum content, placeholder loops and films, and `astro.config.mjs`.                                                    |
+| `packages/astro-creatures-museum/` | [`@wisdomousai/astro-creatures-museum`](packages/astro-creatures-museum/README.md), the integration: pages, the plan, the museum.          |
+| `blender/`                         | The kit the halls are built from (`pieces.py`) and [buildings of your own](blender/buildings/README.md).                                   |
+| `blender/rooms/`                   | The themed rooms (`room: jungle`): Codex paints their walls and textures (`generate.py`, `textures.py`), Blender builds them (`build.sh`). |
+| `scripts/placeholders.sh`          | The starter's placeholder pictures and films, made with ffmpeg.                                                                            |
+| `.claude/skills/`                  | `museum-make` (new templates, kit pieces, art, rooms) and `museum-building` (authored buildings).                                          |
 
 How it fits together:
 

@@ -1,5 +1,6 @@
 // The museum's plan and the way round it: `npm test` (Node 22.18+, which reads the .ts).
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import { generate } from '../src/plan/generate.ts';
 import { Grid, collide } from '../src/nav/grid.ts';
@@ -206,4 +207,138 @@ test('a room of its own is off its hall, through a doorway, with the piece insid
     // Its plate, and art on the other side.
     assert.equal(plan.hung.filter((h) => h.slot.room === a.id).length, 3);
   }
+});
+
+// The themed rooms' sizes and what stands in them, as Blender made them.
+const themes = JSON.parse(readFileSync(new URL('../assets/rooms/rooms.json', import.meta.url)));
+const NAMES = Object.keys(themes);
+/** Works with themed rooms of their own, every theme in turn, two wings of them. */
+const themedInput = () => {
+  let k = 0;
+  const theme = () => NAMES[k++ % NAMES.length];
+  return {
+    ...input(30, 10),
+    themes,
+    wings: [
+      {
+        path: '/projects',
+        label: 'Works',
+        entries: entries('projects', 30).map((e, i) =>
+          i % 3 === 1 ? { ...e, room: true, theme: theme() } : e,
+        ),
+      },
+      {
+        path: '/more',
+        label: 'More',
+        entries: entries('more', 20).map((e, i) =>
+          i % 2 ? { ...e, room: true, theme: theme() } : e,
+        ),
+      },
+    ],
+  };
+};
+
+test('a themed room is its own size, with what stands in it to walk round', () => {
+  const plan = generate(themedInput());
+  const themed = plan.rooms.filter((r) => r.theme);
+  assert.ok(new Set(themed.map((r) => r.theme)).size === NAMES.length, 'every theme is there');
+  for (const r of themed) {
+    const t = themes[r.theme];
+    const w = r.max[0] - r.min[0];
+    const d = r.max[1] - r.min[1];
+    const [across, deep] = Math.abs(r.forward[0]) ? [d, w] : [w, d];
+    assert.ok(Math.abs(across - t.width) < 1e-6 && Math.abs(deep - t.depth) < 1e-6, r.id);
+    assert.equal(r.height, t.height);
+    // Its blocks are in it.
+    const inside = plan.blocks.filter(
+      (b) =>
+        b.min[0] >= r.min[0] &&
+        b.max[0] <= r.max[0] &&
+        b.min[1] >= r.min[1] &&
+        b.max[1] <= r.max[1],
+    );
+    assert.ok(inside.length >= t.blocks.length - 1, `${r.id}'s things aren't in it`);
+  }
+  // Not all alike.
+  assert.ok(new Set(themed.map((r) => `${r.max[0] - r.min[0]}x${r.max[1] - r.min[1]}`)).size > 2);
+});
+
+test('themed rooms keep clear of each other, and all of them can be walked round', () => {
+  const plan = generate(themedInput());
+  for (const [i, a] of plan.rooms.entries())
+    for (const b of plan.rooms.slice(i + 1)) {
+      const overlap =
+        Math.min(a.max[0], b.max[0]) - Math.max(a.min[0], b.min[0]) > 1e-6 &&
+        Math.min(a.max[1], b.max[1]) - Math.max(a.min[1], b.min[1]) > 1e-6;
+      assert.ok(!overlap, `${a.id} overlaps ${b.id}`);
+    }
+  const grid = new Grid(plan);
+  const from = [plan.spawn.at[0], plan.spawn.at[2]];
+  for (const h of plan.hung) {
+    const path = grid.path(from, [h.view.at[0], h.view.at[2]]);
+    assert.ok(path.length >= 2, `no way to ${h.slot.id}`);
+  }
+  // The crew's strips are clear of what stands there.
+  for (const l of plan.lanes.filter((l) => plan.rooms.find((r) => r.id === l.room)?.theme)) {
+    const back = [l.along[1], -l.along[0]];
+    for (const s of [0, l.length / 2, l.length])
+      for (const d of [0, l.width / 2]) {
+        const x = l.at[0] + l.along[0] * s + back[0] * d;
+        const z = l.at[1] + l.along[1] * s + back[1] * d;
+        const hit = plan.blocks.find(
+          (b) => x > b.min[0] && x < b.max[0] && z > b.min[1] && z < b.max[1],
+        );
+        assert.ok(!hit, `${l.id} runs into something at ${x}, ${z}`);
+      }
+  }
+});
+
+test('a theme there is no room for is a plain room of its own', () => {
+  // Rooms the size of a wing off every hall, both sides: some must give way.
+  const big = { width: 9, depth: 30, height: 6, blocks: [] };
+  const plan = generate({
+    ...input(4, 4),
+    themes: { big },
+    wings: ['a', 'b', 'c', 'd'].map((k) => ({
+      path: `/${k}`,
+      label: k,
+      entries: entries(k, 6).map((e) => ({ ...e, room: true, theme: 'big' })),
+    })),
+  });
+  const alcoves = plan.rooms.filter((r) => r.kind === 'alcove');
+  assert.ok(alcoves.some((r) => r.theme) && alcoves.some((r) => !r.theme));
+});
+
+test('who lives in a themed room has its floor to themselves, short of its piece', () => {
+  const plan = generate(themedInput());
+  for (const r of plan.rooms.filter((r) => r.theme)) {
+    const own = plan.lanes.filter((l) => l.room === r.id);
+    assert.ok(own.length >= 1, `no one lives in ${r.id}`);
+    for (const l of own) {
+      assert.equal(l.residents, themes[r.theme].residents.join(' '), l.id);
+      // Not on the crew's way round.
+      assert.ok(!plan.links.some((k) => k.a.lane === l.id || k.b.lane === l.id), l.id);
+      // In the room, its far side short of the back wall (the piece is seen over them).
+      const back = [l.along[1], -l.along[0]];
+      for (const [s, d] of [
+        [0, 0],
+        [l.length, 0],
+        [0, l.width],
+        [l.length, l.width],
+      ]) {
+        const x = l.at[0] + l.along[0] * s + back[0] * d;
+        const z = l.at[1] + l.along[1] * s + back[1] * d;
+        assert.ok(x >= r.min[0] && x <= r.max[0] && z >= r.min[1] && z <= r.max[1], l.id);
+        const deep = (x - r.min[0]) * r.forward[0] + (z - r.min[1]) * r.forward[1];
+        const D =
+          Math.abs(r.forward[0]) * (r.max[0] - r.min[0]) +
+          Math.abs(r.forward[1]) * (r.max[1] - r.min[1]);
+        const into = r.forward[0] + r.forward[1] > 0 ? deep : D + deep;
+        assert.ok(into <= D - 2.5, `${l.id} runs up to the piece`);
+      }
+    }
+  }
+  // Plain rooms of their own keep the crew's single strip.
+  const plain = generate(input());
+  for (const l of plain.lanes) assert.equal(l.residents, undefined);
 });

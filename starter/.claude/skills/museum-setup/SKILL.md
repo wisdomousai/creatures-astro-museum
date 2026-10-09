@@ -47,7 +47,9 @@ For each project, ask what to show:
   or 1080p). In an `.mdx` page, `<Film src="…" />` shows it in the page too.
 - **A room of its own** (`exhibit.room: true` and `gallery:`): for their best piece. It
   gets its own room off the hall, the piece on the back wall and two gallery pictures on
-  the sides.
+  the sides. Or a place, with some of the crew living there: `room: jungle`, `forest`,
+  `aquarium`, `snow`, `village`, `alps`, or the zoo's `cat-cafe`, `dog-park`, `aviary`,
+  `robot-park`.
 - `exhibit.size` (`s`, `m`, `l`) and `order` (lower comes first) to arrange the wing.
 
 Then delete the starter's placeholders they no longer use: `public/museum/lorem*.mp4`,

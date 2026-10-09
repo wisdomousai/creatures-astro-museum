@@ -73,7 +73,7 @@ exhibit:
   video: /museum/lorem.mp4 # a muted loop that plays in the frame while you're before it
   film: /museum/lorem-film.mp4 # the whole film, with sound, for the Watch button
   image: ../../assets/projects/other.jpg # if not the cover
-  room: true # a room of its own off the hall, hung with the gallery
+  room: true # a room of its own off the hall, hung with the gallery; or a place (below)
   gallery:
     - ../../assets/projects/lorem-1.jpg
     - ../../assets/projects/lorem-2.jpg
@@ -97,6 +97,7 @@ Loops are best short (6 s), muted and small (720p at a high CRF). With `-movflag
 | `front-desk`       | The contact page: the lobby's front desk.                    |
 | `filler-painting`  | Generated art (it's what fills the walls).                   |
 | `filler-sculpture` | Generated sculpture.                                         |
+| `living-painting`  | A deep frame with one of the crew in it. Click and out it jumps, into the room, and another comes up. Hung in place of some of the generated art; it needs the crew. |
 
 ### A film on a page
 
@@ -150,9 +151,20 @@ from those names, and stops with a list of what's wrong if it can't.
 
 The robots are [@wisdomousai/creatures](https://www.npmjs.com/package/@wisdomousai/creatures)'
 own, walking lanes of floor in the halls (`Roam`). They turn up where you aren't looking,
-go from hall to hall through the doorways, and watch you go by. Click one and it notices.
+go from hall to hall through the doorways, and watch you go by; now and then one hops up
+on a bench and sits a while. Click one and it notices.
 Click again and it does a trick. Hold on to one and drag it about the room; drag a bird up
 and let go, and it flies. Their models are served from your site, out of
 `node_modules`.
+
+A room of its own can be a place instead (`room: jungle`), papered with its view, and some
+of the crew live there, among their own furniture and toys: monkeys and butterflies in the
+`jungle`, foxes and owls in the `forest`, fish, octopuses and crabs in the `aquarium`,
+penguins in the `snow`, hens, cats and donkeys in the `village`, goats and cows in the
+`alps`. And the zoo: cats in the `cat-cafe` (cat trees, an armchair, yarn), dogs in the
+`dog-park` (kennels, a ball, a bone), birds in the `aviary` (perches, a birdbath, a tree)
+and robots in the `robot-park` (a trampoline, a seesaw, blocks). They come on as you come
+near, and stay. What's hung there is framed to suit the place: larch on the mountain top,
+shutter blue in the village, verdigris under the sea.
 
 MIT.

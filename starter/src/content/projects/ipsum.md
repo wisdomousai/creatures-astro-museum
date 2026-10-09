@@ -8,6 +8,8 @@ stack: [TypeScript]
 cover: ../../assets/projects/ipsum.jpg
 exhibit:
   video: /museum/ipsum.mp4
+  # The zoo: a robot park, the loop playing on its back wall.
+  room: robot-park
 ---
 
 Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque

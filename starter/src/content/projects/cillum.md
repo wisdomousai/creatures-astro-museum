@@ -5,6 +5,13 @@ order: 12
 role: Quas odit
 period: '2021–2022'
 stack: [three.js, Python]
+exhibit:
+  image: ../../assets/projects/dolor.jpg
+  # The zoo: a room of its own where some of the crew live: a cat café.
+  room: cat-cafe
+  gallery:
+    - ../../assets/projects/eiusmod.jpg
+    - ../../assets/projects/dolor-1.jpg
 ---
 
 Vero irure facilis ducimus rerum exercitation beatae repellat eiusmod culpa modi repellat

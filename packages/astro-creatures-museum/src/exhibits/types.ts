@@ -1,7 +1,8 @@
 // What an exhibit template is: a way of showing a page (or a piece of art) in the museum.
 // The built-in ones are in ./templates; a site adds its own with the `templates` option,
 // each a module whose default export is an ExhibitTemplate (see ./api.ts).
-import type { Object3D, Texture } from 'three';
+import type { Character } from '@wisdomousai/creatures';
+import type { Object3D, Texture, Vector3 } from 'three';
 import type { Kit } from '../museum/kit';
 import type { Look, Materials } from '../museum/materials';
 import type { Entry, Footprint, Hung } from '../plan/types';
@@ -19,6 +20,22 @@ export interface Ctx {
   video(src: string, material: { map: Texture | null; needsUpdate: boolean }, object: Object3D): void;
   /** A label card (kicker, title, summary), `w` x `h` metres, facing +z. */
   label(entry: Entry | null, w: number, h: number, extra?: { title?: string; kicker?: string; foot?: string }): Object3D;
+  /** The crew, for a template with one of them in it (a living painting); null when
+   * they're off (motion's unwelcome). */
+  crew: CrewHook | null;
+}
+
+export interface CrewHook {
+  /** Who may be shown (ROSTER names), where their models are, and how they're dressed. */
+  roster: string[];
+  models: string;
+  look: Look;
+  /** Where the visitor's eyes are (the camera's position, kept up to date). */
+  eye: Vector3;
+  /** This one (the template's own) jumps out into the room: its feet at `at` (world), down
+   * onto the floor at `land` ([x, z]), and it's one of the crew going round from then on.
+   * Says whether it could. */
+  jumpOut(c: Character, at: Vector3, land: [number, number]): Promise<boolean>;
 }
 
 /** An exhibit, built: what to add to the museum, and what can be clicked. */
@@ -31,6 +48,9 @@ export interface Built {
   picks: Object3D[];
   /** Every frame: dt, and how close the visitor is (1 standing at it, 0 far off). */
   update?(dt: number, near: number): void;
+  /** Clicked, it does this (a living painting's one jumps out), and the visitor stays
+   * where they are. */
+  poke?(): void;
 }
 
 export interface ExhibitTemplate {

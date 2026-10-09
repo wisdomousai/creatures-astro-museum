@@ -5,6 +5,13 @@ order: 10
 role: Consequuntur eaque itaque
 period: '2022–2023'
 stack: [Astro, three.js, TypeScript]
+exhibit:
+  image: ../../assets/projects/eiusmod.jpg
+  # The zoo: a dog park.
+  room: dog-park
+  gallery:
+    - ../../assets/projects/lorem.jpg
+    - ../../assets/projects/dolor-2.jpg
 ---
 
 Voluptatem totam eos eos maxime officiis dignissimos voluptate dicta mollit quos nostrud

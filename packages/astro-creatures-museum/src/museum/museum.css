@@ -10,7 +10,7 @@
   pointer-events: none;
 }
 
-#museum :is(button, a, nav, section, .m-canvas) {
+#museum :is(button, a, nav, section, .m-canvas, .m-tricks) {
   pointer-events: auto;
 }
 
@@ -27,10 +27,6 @@
 
 .m-canvas:active {
   cursor: grabbing;
-}
-
-.m-canvas[data-over='floor'] {
-  cursor: crosshair;
 }
 
 .m-canvas:is([data-over='exhibit'], [data-over='art']) {
@@ -199,6 +195,33 @@
   animation: m-hint-in 0.5s 0.4s cubic-bezier(0.2, 0.9, 0.3, 1.2) backwards;
 }
 
+.m-hint-close {
+  position: absolute;
+  top: 0.45rem;
+  right: 0.5rem;
+  display: grid;
+  place-items: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  padding: 0;
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background: none;
+  color: var(--m-trim);
+  font: 600 1.1rem/1 var(--font-sans);
+  cursor: pointer;
+  opacity: 0.7;
+  transition:
+    opacity 0.15s,
+    border-color 0.15s;
+}
+
+.m-hint-close:is(:hover, :focus-visible) {
+  border-color: var(--m-trim);
+  opacity: 1;
+  outline: none;
+}
+
 .m-keys {
   display: grid;
   justify-items: center;
@@ -276,6 +299,10 @@
 .m-hint.m-gone {
   opacity: 0;
   pointer-events: none;
+}
+
+#museum .m-hint.m-gone .m-hint-close {
+  visibility: hidden;
 }
 
 .m-caption {
@@ -483,4 +510,81 @@ html[data-museum] #main h1[tabindex='-1']:focus {
   .m-player figure {
     animation: none;
   }
+}
+
+/* One of the crew's tricks (tricks.ts), at the pointer: a card with its name, a key for
+   each of a few tricks in as many columns as fit, More for the rest, and Send off. */
+.m-tricks {
+  position: fixed;
+  z-index: 30;
+  box-sizing: border-box;
+  width: max-content;
+  max-width: min(27rem, calc(100vw - 16px));
+  max-height: min(70vh, 30rem);
+  overflow: auto;
+  padding: 0.65rem 0.65rem 0.6rem;
+  border: 2px solid var(--m-trim);
+  border-radius: 0.8rem;
+  background: var(--m-paper);
+  box-shadow: 0 4px 0 var(--m-trim), 0 14px 30px -14px rgb(0 0 0 / 0.45);
+  color: var(--m-ink);
+  transform-origin: top left;
+  scrollbar-width: thin;
+}
+
+.m-tricks-name {
+  margin: 0 0.2rem 0.5rem;
+  color: var(--m-trim);
+  font: 700 10px/1 var(--font-sans);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.m-tricks-games {
+  margin-top: 0.7rem;
+}
+
+.m-tricks-items {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(7.2rem, 1fr));
+  gap: 0.35rem;
+  min-width: min(15rem, calc(100vw - 2.6rem));
+}
+
+.m-tricks :is(.m-tricks-item, .m-tricks-more, .m-tricks-last) {
+  padding: 0.35rem 0.6rem;
+  border: 2px solid var(--m-trim);
+  border-radius: 999px;
+  background: var(--m-paper);
+  box-shadow: 0 2px 0 var(--m-trim);
+  color: var(--m-ink);
+  font: 600 12px/1.2 var(--font-sans);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    transform 0.08s,
+    box-shadow 0.08s;
+}
+
+.m-tricks :is(.m-tricks-item, .m-tricks-more, .m-tricks-last):is(:hover, :focus-visible) {
+  background: color-mix(in srgb, var(--m-brass) 22%, var(--m-paper));
+  outline: none;
+}
+
+.m-tricks :is(.m-tricks-item, .m-tricks-more, .m-tricks-last):active {
+  transform: translateY(2px);
+  box-shadow: 0 0 0 var(--m-trim);
+}
+
+.m-tricks-more {
+  display: block;
+  margin-top: 0.35rem;
+  border-style: dashed !important;
+  box-shadow: none !important;
+}
+
+.m-tricks-last {
+  display: block;
+  margin-top: 0.55rem;
+  color: var(--m-trim) !important;
 }

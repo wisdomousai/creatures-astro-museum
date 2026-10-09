@@ -49,6 +49,7 @@ export class Hud {
       </header>
       <nav class="m-index" id="m-index" aria-label="The museum's rooms" hidden></nav>
       <aside class="m-hint" aria-label="How to get about">
+        <button class="m-hint-close" type="button" aria-label="Hide these hints">×</button>
         <div class="m-keys">
           <div class="m-pad" aria-hidden="true">
             <kbd data-key="KeyW">W</kbd><kbd data-key="KeyA">A</kbd><kbd data-key="KeyS">S</kbd><kbd data-key="KeyD">D</kbd>
@@ -61,7 +62,7 @@ export class Hud {
           </div>
           <p><b>Arrows</b> look around</p>
         </div>
-        <p class="m-also">or drag to look · click the floor or an exhibit to go there · <kbd>Shift</kbd> to hurry</p>
+        <p class="m-also">or pull the floor to walk · click an exhibit to go to it · right-click a creature for its tricks · <kbd>Shift</kbd> to hurry</p>
       </aside>
       <section class="m-caption" aria-live="polite" hidden>
         <p class="m-kicker"></p>
@@ -84,6 +85,10 @@ export class Hud {
     this.canvas = root.querySelector('.m-canvas')!;
     this.room = root.querySelector('.m-room')!;
     this.hint = root.querySelector('.m-hint')!;
+    // (Put away by hand, it's gone; else it goes once they've walked and looked.)
+    this.hint
+      .querySelector('.m-hint-close')!
+      .addEventListener('click', () => this.hint.classList.add('m-gone'));
     for (const k of this.hint.querySelectorAll<HTMLElement>('[data-key]'))
       this.keys.set(k.dataset.key!, k);
     this.caption = root.querySelector('.m-caption')!;

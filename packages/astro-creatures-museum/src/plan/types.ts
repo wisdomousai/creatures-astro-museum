@@ -33,6 +33,8 @@ export interface Entry {
   template: string;
   size: 's' | 'm' | 'l';
   room: boolean;
+  /** A room of its own dressed as a place (THEMES), or null for a plain one. */
+  theme: string | null;
   image: Picture | null;
   video: string | null;
   /** The whole film, with sound, for the player. */
@@ -55,6 +57,41 @@ export interface Room {
   max: V2;
   /** Into the room from where the visitor comes in. */
   forward: V2;
+  /** A themed room's theme (assets/rooms/<theme>.glb), and its own height. */
+  theme?: string;
+  height?: number;
+}
+
+/** The themed rooms there are: `room: jungle` in a page's exhibit. Each has some of the
+ * crew living in it; the last four are the zoo's (cats, dogs, birds, robots). */
+export const THEMES = [
+  'jungle',
+  'forest',
+  'aquarium',
+  'snow',
+  'village',
+  'alps',
+  'cat-cafe',
+  'dog-park',
+  'aviary',
+  'robot-park',
+] as const;
+
+/** A themed room's size and what stands on its floor (assets/rooms/rooms.json, from
+ * blender/rooms/rooms.py): u across, v in from its doorway's middle. */
+export interface ThemeSpec {
+  width: number;
+  depth: number;
+  height: number;
+  /** What stands there, to walk round: [u0, v0, u1, v1] each. */
+  blocks: number[][];
+  /** Who lives there: families of the crew ('cat', 'sea'...) and any of it by name
+   * ('butterfly'). They have the room to themselves, and stay. */
+  residents?: string[];
+  /** The crew's own furniture and toys standing in it (their models, set-cattree say):
+   * where, turned how far about the vertical (radians, 0 facing in), and how big its
+   * biggest side is (metres). */
+  set?: { model: string; at: number[]; yaw: number; size: number }[];
 }
 
 /** A straight run of wall, from a to b, the room on its left (seen from above, -y). */
@@ -120,6 +157,9 @@ export interface Lane {
   along: V2;
   length: number;
   width: number;
+  /** A themed room's: who lives on it, families of the crew or names, space between (the
+   * crew going round don't come). */
+  residents?: string;
 }
 
 /** A way through between two lanes' ends. */

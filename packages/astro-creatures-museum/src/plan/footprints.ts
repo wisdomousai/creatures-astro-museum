@@ -36,6 +36,12 @@ export const FOOTPRINTS: Record<string, (e: Entry | null, r: number) => Footprin
     return { mount: 'wall', width: w + 2 * MOULDING, height: h + 2 * MOULDING };
   },
   'filler-sculpture': () => ({ mount: 'floor', width: 0.9, height: 0.9 }),
+  // Room in it for one of the crew to stand, a little under life size.
+  'living-painting': (_, r) => {
+    const h = 1.0 + r * 0.25;
+    const w = h * (0.95 + ((r * 5.17) % 1) * 0.35);
+    return { mount: 'wall', width: w + 2 * MOULDING, height: h + 2 * MOULDING };
+  },
 };
 
 /** A template's footprint, or a framed picture's for one it doesn't know. */

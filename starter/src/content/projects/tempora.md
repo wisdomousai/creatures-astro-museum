@@ -5,6 +5,13 @@ order: 9
 role: Ipsum labore
 period: '2023–2024'
 stack: [Node]
+exhibit:
+  image: ../../assets/projects/dolor-2.jpg
+  # A room of its own, dressed as a place: alps.
+  room: alps
+  gallery:
+    - ../../assets/projects/ipsum.jpg
+    - ../../assets/projects/eiusmod.jpg
 ---
 
 Ducimus atque consequat alias debitis necessitatibus porro deserunt perspiciatis inventore earum

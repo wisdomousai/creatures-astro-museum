@@ -1,0 +1,140 @@
+{
+  "alps": {"width": 10, "depth": 7, "height": 6, "residents": ["goat", "ram", "lamb", "alpaca", "highlandcalf", "cow", "bordercollie", "saintbernard", "raven", "butterfly"], "blocks": [
+    [2.9, 4.75, 4.7, 6.25],
+    [-4.7, 4.75, -2.9, 6.25],
+    [2.95, 4.95, 4.45, 6.45],
+    [-3.8, 0.9, -3.2, 1.5],
+    [-4.2, 5.8, -3.8, 6.2]
+  ], "set": []},
+  "aquarium": {"width": 8, "depth": 10, "height": 5, "residents": ["sea"], "blocks": [
+    [1.85, 0.95, 3.95, 2.85],
+    [2.55, 0.45, 3.95, 1.75],
+    [1.75, 7.85, 3.85, 9.75],
+    [2.45, 8.35, 3.85, 9.65],
+    [-3.95, 0.95, -1.85, 2.85],
+    [-3.95, 0.45, -2.55, 1.75],
+    [-3.85, 7.85, -1.75, 9.75],
+    [-3.85, 8.35, -2.45, 9.65],
+    [-3.8, 6.8, -3.1, 8.4]
+  ], "set": []},
+  "aviary": {"width": 9, "depth": 10, "height": 8, "residents": ["bird"], "blocks": [
+    [3.0, 1.6, 3.8, 2.4],
+    [3.0, 7.2, 3.8, 8.0],
+    [3.7, 2.7, 4.3, 3.3],
+    [-3.8, 1.6, -3.0, 2.4],
+    [-3.8, 7.2, -3.0, 8.0],
+    [-4.3, 2.7, -3.7, 3.3],
+    [2.92, 8.42, 4.28, 9.78],
+    [-3.05, 8.55, -2.15, 9.45]
+  ], "set": [
+    {"model": "set-perch", "at": [3.4, 2.0], "yaw": -0.848, "size": 2.0},
+    {"model": "set-perch", "at": [3.4, 7.6], "yaw": -2.224, "size": 2.3},
+    {"model": "set-fern", "at": [4.0, 3.0], "yaw": -1.107, "size": 1.0},
+    {"model": "set-perch", "at": [-3.4, 2.0], "yaw": 0.848, "size": 2.0},
+    {"model": "set-perch", "at": [-3.4, 7.6], "yaw": 2.224, "size": 2.3},
+    {"model": "set-fern", "at": [-4.0, 3.0], "yaw": 1.107, "size": 1.0},
+    {"model": "set-birdbath", "at": [-2.6, 9.0], "yaw": 2.565, "size": 1.1}
+  ]},
+  "cat-cafe": {"width": 9, "depth": 8, "height": 4.5, "residents": ["cat"], "blocks": [
+    [3.0, 6.3, 4.2, 7.5],
+    [-4.2, 6.3, -3.0, 7.5],
+    [3.0, 0.8, 4.0, 1.8],
+    [3.85, 1.85, 4.35, 2.35],
+    [-3.9, 1.0, -2.9, 2.0],
+    [2.65, 5.55, 3.35, 6.25],
+    [-3.3, 5.6, -2.5, 6.4]
+  ], "set": [
+    {"model": "set-cattree", "at": [3.6, 6.9], "yaw": -2.249, "size": 2.0},
+    {"model": "set-cattree", "at": [-3.6, 6.9], "yaw": 2.249, "size": 2.0},
+    {"model": "set-armchair", "at": [3.5, 1.3], "yaw": -0.914, "size": 1.0},
+    {"model": "set-lamp", "at": [4.1, 2.1], "yaw": -1.137, "size": 1.7},
+    {"model": "prop-table", "at": [-3.4, 1.5], "yaw": 0.937, "size": 0.9},
+    {"model": "set-stool", "at": [-4.1, 1.5], "yaw": 1.571, "size": 0.5},
+    {"model": "set-stool", "at": [-2.7, 1.5], "yaw": -1.571, "size": 0.5},
+    {"model": "set-fern", "at": [3.0, 5.9], "yaw": -2.135, "size": 1.0},
+    {"model": "prop-crate", "at": [-2.9, 6.0], "yaw": 2.175, "size": 0.7},
+    {"model": "set-rug", "at": [0, 3.8], "yaw": 0, "size": 2.6},
+    {"model": "prop-cushion", "at": [1.3, 2.4], "yaw": -0.682, "size": 0.7},
+    {"model": "prop-yarn", "at": [-1.1, 4.6], "yaw": 2.07, "size": 0.3},
+    {"model": "prop-yarn", "at": [1.8, 5.3], "yaw": -2.196, "size": 0.25}
+  ]},
+  "dog-park": {"width": 10, "depth": 10, "height": 7, "residents": ["dog"], "blocks": [
+    [2.9, 7.6, 4.5, 9.2],
+    [3.32, 0.72, 4.68, 2.08],
+    [4.3, 2.8, 4.7, 3.2],
+    [3.9, 3.0, 4.3, 3.4],
+    [-4.5, 7.6, -2.9, 9.2],
+    [-4.68, 0.72, -3.32, 2.08],
+    [-4.7, 2.8, -4.3, 3.2],
+    [-4.3, 3.0, -3.9, 3.4]
+  ], "set": [
+    {"model": "set-kennel", "at": [3.7, 8.4], "yaw": -2.314, "size": 1.6},
+    {"model": "set-sunflower", "at": [4.5, 3.0], "yaw": -1.153, "size": 1.6},
+    {"model": "set-sunflower", "at": [4.1, 3.2], "yaw": -1.157, "size": 1.3},
+    {"model": "set-kennel", "at": [-3.7, 8.4], "yaw": 2.314, "size": 1.6},
+    {"model": "set-sunflower", "at": [-4.5, 3.0], "yaw": 1.153, "size": 1.6},
+    {"model": "set-sunflower", "at": [-4.1, 3.2], "yaw": 1.157, "size": 1.3},
+    {"model": "prop-ball", "at": [1.1, 3.1], "yaw": -0.525, "size": 0.35},
+    {"model": "prop-bone", "at": [-1.6, 5.4], "yaw": 1.816, "size": 0.45},
+    {"model": "prop-frisbee", "at": [0.9, 6.1], "yaw": -2.456, "size": 0.4}
+  ]},
+  "forest": {"width": 8, "depth": 9, "height": 6, "residents": ["fox", "squirrel", "hedgehog", "bunny", "fawn", "raccoon", "beaver", "bear", "owl", "mouse", "snail", "firefly"], "blocks": [
+    [2.35, 1.25, 3.45, 2.35],
+    [2.26, 7.36, 3.74, 8.84],
+    [2.05, 5.85, 3.55, 7.15],
+    [-3.45, 1.25, -2.35, 2.35],
+    [-3.74, 7.36, -2.26, 8.84],
+    [-3.55, 5.85, -2.05, 7.15],
+    [-3.8, 5.9, -3.1, 8.1]
+  ], "set": []},
+  "jungle": {"width": 9, "depth": 9, "height": 6, "residents": ["jungle", "butterfly", "dragonfly", "toucan", "macaw"], "blocks": [
+    [2.63, 0.73, 4.37, 2.47],
+    [2.42, 7.32, 3.98, 8.88],
+    [2.7, 6.0, 4.1, 7.2],
+    [-4.37, 0.73, -2.63, 2.47],
+    [-3.98, 7.32, -2.42, 8.88],
+    [-4.1, 6.0, -2.7, 7.2]
+  ], "set": []},
+  "robot-park": {"width": 10, "depth": 9, "height": 6, "residents": ["robot"], "blocks": [
+    [2.95, 6.55, 4.65, 8.25],
+    [-4.2, 6.0, -3.4, 8.2],
+    [4.25, 1.75, 4.75, 2.25],
+    [-4.75, 1.75, -4.25, 2.25],
+    [-4.0, 1.2, -3.2, 2.0],
+    [3.25, 1.15, 4.15, 2.05]
+  ], "set": [
+    {"model": "prop-trampoline", "at": [3.8, 7.4], "yaw": -2.223, "size": 1.7},
+    {"model": "prop-seesaw", "at": [-3.8, 7.1], "yaw": 1.571, "size": 2.2},
+    {"model": "set-lamp", "at": [4.5, 2.0], "yaw": -1.064, "size": 1.8},
+    {"model": "set-lamp", "at": [-4.5, 2.0], "yaw": 1.064, "size": 1.8},
+    {"model": "prop-drum", "at": [-3.6, 1.6], "yaw": 0.893, "size": 0.7},
+    {"model": "prop-crate", "at": [3.7, 1.6], "yaw": -0.906, "size": 0.8},
+    {"model": "prop-top", "at": [1.0, 3.0], "yaw": -0.588, "size": 0.45},
+    {"model": "prop-block-star", "at": [-1.2, 4.6], "yaw": 1.654, "size": 0.35},
+    {"model": "prop-block-heart", "at": [-0.6, 4.9], "yaw": 2.159, "size": 0.3},
+    {"model": "prop-block-ring", "at": [1.5, 5.4], "yaw": -2.111, "size": 0.35},
+    {"model": "prop-ball", "at": [-0.3, 2.4], "yaw": 0.142, "size": 0.35}
+  ]},
+  "snow": {"width": 7, "depth": 8, "height": 5, "residents": ["penguin", "polarcub", "snowleopard", "sealpup", "husky"], "blocks": [
+    [1.6, 6.2, 3.4, 7.8],
+    [1.9, 4.35, 3.4, 6.45],
+    [2.14, 1.14, 3.06, 2.06],
+    [1.45, 2.15, 3.35, 3.65],
+    [-3.4, 6.2, -1.6, 7.8],
+    [-3.4, 4.35, -1.9, 6.45],
+    [-3.06, 1.14, -2.14, 2.06],
+    [-3.35, 2.15, -1.45, 3.65],
+    [-3.05, 5.65, -1.95, 6.75]
+  ], "set": []},
+  "village": {"width": 10, "depth": 10, "height": 7, "residents": ["shorthair", "oldtabby", "beagle", "corgi", "hen", "rooster", "chick", "duck", "goose", "piglet", "donkey", "butterfly", "bee"], "blocks": [
+    [3.12, 1.12, 4.48, 2.48],
+    [-4.48, 1.12, -3.12, 2.48],
+    [2.15, 7.05, 4.65, 9.55],
+    [-4.1, 7.1, -2.1, 9.1],
+    [-4.0, 5.3, -2.0, 7.3],
+    [4.2, 2.0, 4.9, 3.6],
+    [4.2, 6.5, 4.9, 8.1],
+    [-4.9, 2.0, -4.2, 3.6],
+    [-4.9, 6.5, -4.2, 8.1]
+  ], "set": []}
+}

@@ -55,9 +55,10 @@ const M = 0.12;
 
 /**
  * A frame round a `w` x `h` picture, its face at z = 0 (the wall) and the picture set
- * in it; with a light over it unless `lamp` is false.
+ * in it; with a light over it unless `lamp` is false. `open`, it's only the frame, with
+ * nothing behind it (the front of a box with something in it).
  */
-export function framed(ctx: Ctx, w: number, h: number, lamp = true): Group {
+export function framed(ctx: Ctx, w: number, h: number, lamp = true, open = false): Group {
   const x = w / 2 + M / 2;
   const y = h / 2 + M / 2;
   const pieces = [
@@ -71,6 +72,7 @@ export function framed(ctx: Ctx, w: number, h: number, lamp = true): Group {
   ];
   if (lamp) pieces.push({ piece: 'lamp', at: place(0, h / 2 + M + 0.14, 0, 0, Math.max(0.5, w * 0.55)) });
   const group = assemble(ctx, pieces);
+  if (open) return group;
   // A backing board behind the picture, and the stretcher it's on, back to the wall (it
   // hangs clear of the rails, RAIL out).
   const back = new Mesh(new PlaneGeometry(w + 0.02, h + 0.02), ctx.materials.role('Dark'));

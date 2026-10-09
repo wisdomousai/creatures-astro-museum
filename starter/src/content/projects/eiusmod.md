@@ -8,6 +8,11 @@ stack: [Python]
 cover: ../../assets/projects/eiusmod.jpg
 exhibit:
   video: /museum/eiusmod.mp4
+  # A room of its own, dressed as a place: village.
+  room: village
+  gallery:
+    - ../../assets/projects/lorem.jpg
+    - ../../assets/projects/dolor-1.jpg
 ---
 
 Mollitia pariatur porro excepteur minim reiciendis reprehenderit dolore mollitia quisquam do

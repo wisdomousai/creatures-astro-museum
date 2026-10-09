@@ -16,6 +16,7 @@ import type {
   Room,
   Sign,
   Slot,
+  ThemeSpec,
   V2,
   V3,
   View,
@@ -37,6 +38,8 @@ export interface Input {
   filler: { density: number; seed: string };
   /** How much room a template wants (the built-in ones', unless the site has its own). */
   measure?: (template: string, entry: Entry | null, r: number) => Footprint;
+  /** The themed rooms' sizes and what stands in them (assets/rooms/rooms.json). */
+  themes?: Record<string, ThemeSpec>;
 }
 
 /** The walls' height, a doorway's size and the eye's height. */
@@ -58,6 +61,10 @@ const LOBBY: { min: V2; max: V2 } = { min: [-9, -7], max: [9, 7] };
 /** A room of its own off a hall (an exhibit with `room: true`): as wide along the hall's
  * wall and as deep behind it. */
 const ALCOVE = { width: 5, depth: 5.5 };
+/** A themed room's crew keep this far from its side walls (its trees and rocks are there). */
+const CORNERS = 2.2;
+/** One wall painting in so many (by its seed) is a living one. */
+const LIVING = 3;
 
 type Side = 'n' | 'e' | 'w' | 's';
 /** The order wings take the lobby's sides: straight ahead, right, left, behind. */
@@ -121,6 +128,9 @@ const emptyHall = (): HallPlan => ({
 
 export function generate(input: Input): Plan {
   const measure = input.measure ?? builtin;
+  const themes = input.themes ?? {};
+  /** A themed room's size, if it's one there is (else it's a plain room of its own). */
+  const themeOf = (e: Entry) => (e.theme && themes[e.theme] ? themes[e.theme] : null);
   const seedOf = (key: string) => hash(`${input.filler.seed}:${key}`);
   const rooms: Room[] = [];
   const walls: Wall[] = [];
@@ -225,9 +235,11 @@ export function generate(input: Input): Plan {
   side([x1, z1], [x0, z1], doorOn.has('s'), 'lobby');
   side([x0, z1], [x0, z0], doorOn.has('w'), 'lobby');
 
-  /** A piece of art, no wider than `fit` (another seed's, if its own is too wide). */
+  /** A piece of art, no wider than `fit` (another seed's, if its own is too wide). Every
+   * so often a painting on a wall is a living one, with one of the crew in it. */
   const art = (key: string, mount: 'wall' | 'floor', fit = Infinity) => {
-    const template = mount === 'wall' ? 'filler-painting' : 'filler-sculpture';
+    const living = mount === 'wall' && seedOf(`${key}:living`) % LIVING === 0;
+    const template = mount === 'floor' ? 'filler-sculpture' : living ? 'living-painting' : 'filler-painting';
     let seed = seedOf(key);
     let fp = measure(template, null, rng(seed)());
     for (let k = 1; k < 12 && fp.width > fit; k++) {
@@ -327,22 +339,39 @@ export function generate(input: Input): Plan {
   const alcoveOff = (hall: string, wing: string, c: V2, f: V2, out: V2, p: Placed) => {
     const e = p.entries[0];
     const id = `${hall}-${e.key.replace(/[^a-z0-9]+/gi, '-')}`;
-    const half = ALCOVE.width / 2;
-    const D = ALCOVE.depth;
+    const box = (w: number, d: number) => {
+      const xs = [c, add(c, f, -w / 2), add(c, f, w / 2)].flatMap((q) => [q, add(q, out, d)]);
+      return {
+        min: [r3(Math.min(...xs.map((q) => q[0]))), r3(Math.min(...xs.map((q) => q[1])))] as V2,
+        max: [r3(Math.max(...xs.map((q) => q[0]))), r3(Math.max(...xs.map((q) => q[1])))] as V2,
+      };
+    };
+    // A themed room is its theme's size, unless that would run into a room already there
+    // (another wing's): then it's a plain one.
+    let theme = themeOf(e);
+    if (theme) {
+      const b = box(theme.width, theme.depth);
+      const into = rooms.some(
+        (o) =>
+          b.min[0] < o.max[0] && b.max[0] > o.min[0] && b.min[1] < o.max[1] && b.max[1] > o.min[1],
+      );
+      if (into) theme = null;
+    }
+    const W = theme?.width ?? ALCOVE.width;
+    const half = W / 2;
+    const D = theme?.depth ?? ALCOVE.depth;
     const c0 = add(c, f, -half);
     const c1 = add(c, f, half);
     const b0 = add(c0, out, D);
     const b1 = add(c1, out, D);
-    const xs = [c0[0], c1[0], b0[0], b1[0]];
-    const zs = [c0[1], c1[1], b0[1], b1[1]];
     rooms.push({
       id,
       kind: 'alcove',
       wing,
       title: e.title,
-      min: [r3(Math.min(...xs)), r3(Math.min(...zs))],
-      max: [r3(Math.max(...xs)), r3(Math.max(...zs))],
+      ...box(W, D),
       forward: out,
+      ...(theme ? { theme: e.theme!, height: theme.height } : {}),
     });
     // Its walls, the room on each one's right (as the halls' are).
     const centre = add(c, out, D / 2);
@@ -357,16 +386,51 @@ export function generate(input: Input): Plan {
     wall(b0, b1);
     wall(b1, c1);
     doors.push({ a: add(c, f, -DOOR.width / 2), b: add(c, f, DOOR.width / 2), rooms: [hall, id] });
-    // A strip for the crew across it, facing the doorway: visitors to the piece.
+    // A strip for the crew across it, facing the doorway: visitors to the piece (clear of a
+    // themed room's corners). A room with residents has strips of its own for them, from
+    // the doorway to short of the piece, clear of what stands there.
     const along: V2 = [-out[1], out[0]];
-    lanes.push({
-      id: `${id}-lane`,
-      room: id,
-      at: add(add(c, out, 1.2), along, -(half - 0.7)),
-      along,
-      length: 2 * (half - 0.7),
-      width: 2.4,
-    });
+    const reach = theme ? Math.min(half - 0.7, half - CORNERS) : half - 0.7;
+    if (theme?.residents?.length) {
+      let [from, to] = [1.2, D - 2.6];
+      for (const [u0, v0, u1, v1] of theme.blocks) {
+        if (Math.max(u0, u1) <= -reach || Math.min(u0, u1) >= reach) continue;
+        if (Math.min(v0, v1) > D / 2) to = Math.min(to, Math.min(v0, v1) - 0.1);
+        else from = Math.max(from, Math.max(v0, v1) + 0.1);
+      }
+      const n = Math.max(1, Math.floor((to - from) / 2.6));
+      const each = (to - from) / n;
+      for (let k = 0; k < n; k++)
+        lanes.push({
+          id: `${id}-lane${n > 1 ? `-${k + 1}` : ''}`,
+          room: id,
+          at: add(add(c, out, r3(from + k * each)), along, -reach),
+          along,
+          length: 2 * reach,
+          width: r3(each - 0.2),
+          residents: theme.residents.join(' '),
+        });
+    } else
+      lanes.push({
+        id: `${id}-lane`,
+        room: id,
+        at: add(add(c, out, 1.2), along, -reach),
+        along,
+        length: 2 * reach,
+        width: 2.4,
+      });
+    // What stands in a themed room, to walk round: its blocks from the room's own frame
+    // (u across, to the left as you come in; v in).
+    if (theme) {
+      const u: V2 = [out[1], -out[0]];
+      for (const [u0, v0, u1, v1] of theme.blocks) {
+        const ps = [add(add(c, u, u0), out, v0), add(add(c, u, u1), out, v1)];
+        blocks.push({
+          min: [r3(Math.min(ps[0][0], ps[1][0])), r3(Math.min(ps[0][1], ps[1][1]))],
+          max: [r3(Math.max(ps[0][0], ps[1][0])), r3(Math.max(ps[0][1], ps[1][1]))],
+        });
+      }
+    }
     signs.push({
       text: e.title,
       at: v3(add(c, out, -WALL / 2 - 0.01), DOOR.height + 0.5),
@@ -382,7 +446,18 @@ export function generate(input: Input): Plan {
     const main = measure(p.template, e, rnd());
     const template = main.mount === 'floor' ? 'framed-picture' : p.template;
     const big = { ...main, width: main.width * 1.25, height: main.height * 1.25 };
-    hangOn(id, `${id}-main`, add(c, out, D), neg(out), fit(big, 3, 2.4), template, [e], p.seed);
+    // (Bigger in a big room: a themed room keeps its back wall that clear.)
+    const most = theme ? [Math.min(3.6, W - 4), Math.min(2.8, theme.height - 2)] : [3, 2.4];
+    hangOn(
+      id,
+      `${id}-main`,
+      add(c, out, D),
+      neg(out),
+      fit(big, most[0], most[1]),
+      template,
+      [e],
+      p.seed,
+    );
     // The gallery (one to a side wall), else art.
     const sides: [V2, V2][] = [
       [add(c0, out, D / 2), f],
@@ -403,11 +478,20 @@ export function generate(input: Input): Plan {
           gallery: [],
           template: 'framed-picture',
         };
-        const fp = fit(measure('framed-picture', plate, rnd()), D - 2.2, 2.2);
+        const fp = fit(measure('framed-picture', plate, rnd()), Math.min(3, D - 2.2), 2.2);
         hangOn(id, `${id}-plate-${i + 1}`, at, n, fp, 'framed-picture', [plate], p.seed + i + 1);
       } else {
         const a = art(`${id}-art-${i}`, 'wall');
-        hangOn(id, `${id}-art-${i}`, at, n, fit(a.fp, D - 2.2, 2.2), a.template, [], a.seed);
+        hangOn(
+          id,
+          `${id}-art-${i}`,
+          at,
+          n,
+          fit(a.fp, Math.min(3, D - 2.2), 2.2),
+          a.template,
+          [],
+          a.seed,
+        );
       }
     });
   };
@@ -439,7 +523,11 @@ export function generate(input: Input): Plan {
       const seed = seedOf(g.entries[0].key);
       const alcove = g.entries[0].room;
       const fp: Footprint = alcove
-        ? { mount: 'wall', width: ALCOVE.width, height: DOOR.height }
+        ? {
+            mount: 'wall',
+            width: themeOf(g.entries[0])?.width ?? ALCOVE.width,
+            height: DOOR.height,
+          }
         : measure(g.template, g.entries[0], rng(seed)());
       let hall = halls[halls.length - 1];
       if (fp.mount === 'floor') {

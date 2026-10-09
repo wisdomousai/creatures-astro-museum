@@ -45,6 +45,8 @@ const require = createRequire(import.meta.url);
 const models = join(dirname(require.resolve('@wisdomousai/creatures/package.json')), 'models');
 /** The building's kit: walls, floors, frames, plinths (blender/, built by `npm run kit`). */
 const kit = join(here, 'assets', 'kit');
+/** The themed rooms, each made in Blender (blender/rooms/, built by its build.sh). */
+const rooms = join(here, 'assets', 'rooms');
 
 /**
  * @param {Options} [options]
@@ -87,6 +89,7 @@ export default function museum(options = {}) {
       (from) => from !== join(models, 'thumbs') && from !== join(models, 'pic'),
     ],
     ['museum-kit/', kit, () => true],
+    ['museum-rooms/', rooms, () => true],
   ]);
   let base = '/';
   let root = process.cwd();

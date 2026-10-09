@@ -5,6 +5,13 @@ order: 6
 role: Ullamco minus soluta
 period: '2024–2025'
 stack: [three.js, Rust]
+exhibit:
+  image: ../../assets/projects/dolor.jpg
+  # A room of its own, dressed as a place: forest.
+  room: forest
+  gallery:
+    - ../../assets/projects/eiusmod.jpg
+    - ../../assets/projects/dolor-1.jpg
 ---
 
 Maiores tempor necessitatibus quibusdam qui irure, ullamco enim nobis quidem fugit voluptas

@@ -7,6 +7,7 @@
 import { defineCollection, type SchemaContext } from 'astro:content';
 import { glob } from 'astro/loaders';
 import { z } from 'astro/zod';
+import { THEMES } from './plan/types';
 
 /**
  * How a page shows in the museum, all of it optional: without it the page hangs in its
@@ -23,8 +24,12 @@ export const exhibit = (image: SchemaContext['image']) =>
       order: z.number().optional(),
       /** How big it hangs. */
       size: z.enum(['s', 'm', 'l']).default('m'),
-      /** A little room of its own, off the hall, hung with its gallery. */
-      room: z.boolean().default(false),
+      /** A little room of its own, off the hall, hung with its gallery: `true`, or a place
+       * for it to be ('jungle', 'forest', 'aquarium', 'snow', 'village', 'alps'), each
+       * its own size, papered with its view, with things standing in it and some of the
+       * crew living there; or one of the zoo's ('cat-cafe', 'dog-park', 'aviary',
+       * 'robot-park'): its cats, dogs, birds or robots, among their own furniture. */
+      room: z.union([z.boolean(), z.enum(THEMES)]).default(false),
       /** Left out of the museum (the page is still there). */
       hidden: z.boolean().default(false),
       /** The picture in the frame, if not the cover. */
