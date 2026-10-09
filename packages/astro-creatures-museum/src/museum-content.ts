@@ -139,6 +139,7 @@ export async function museumPlan(): Promise<Plan> {
     about: await entry('pages', 'about', { ...about.data, title: about.data.title }, 'about-wall', url('/about'), true, site.author),
     contact: await entry('pages', 'contact', contact.data, 'front-desk', url('/contact'), true, site.email),
     filler: site.filler,
+    arcade: site.arcade,
     // (The themed rooms' sizes and what stands in them, as blender/rooms/ made them.)
     themes: rooms satisfies Record<string, ThemeSpec>,
     // (The site's own templates say how much room they want; the rest, the built-in's.)

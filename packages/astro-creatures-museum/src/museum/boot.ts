@@ -2,12 +2,14 @@
 // (/museum.json), the building from the kit, every exhibit from its template, the visitor
 // at the door (or at the exhibit whose page this is), and the halls drawn till the tab is
 // closed. Pulling the floor walks; clicking an exhibit goes to stand before it and shows
-// its caption, from which its page opens over the halls. A right-click on one of the crew
-// (or a long press) is its menu of tricks.
+// its caption, from which its page opens over the halls; an arcade cabinet's, you walk up
+// to and play, till Esc. A right-click on one of the crew (or a long press) is its menu of
+// tricks.
 import './museum.css';
 import type { Character } from '@wisdomousai/creatures';
 import {
   ACESFilmicToneMapping,
+  Box3,
   Color,
   DirectionalLight,
   HemisphereLight,
@@ -29,9 +31,12 @@ import {
 } from 'three';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import config from 'virtual:astro-creatures-museum/config';
+import { padOf } from '../arcade/screen';
+import type { Pad } from '../arcade/types';
 import { template } from '../exhibits/registry';
 import type { Built, CrewHook, Ctx } from '../exhibits/types';
 import { Grid } from '../nav/grid';
+import { EYE } from '../plan/generate';
 import type { Entry, Hung, Plan, Room } from '../plan/types';
 import { type Caption, Hud } from './hud';
 import { Kit, benchSeats, build } from './kit';
@@ -56,6 +61,8 @@ const CLICK = 5;
 const HOLD = 220;
 const DRAG = 8;
 const LONG = 550;
+/** Up to a cabinet's screen, it fills this much of the view's height. */
+const FILL = 0.75;
 
 interface Exhibit {
   hung: Hung;
@@ -210,6 +217,24 @@ async function run(plan: Plan, hud: Hud, materials: Materials, look: Look) {
   const walker = new Walker(camera, grid);
   walker.onMove = (how) => hud.moved(how);
 
+  // Playing: walked up to a cabinet (`heading`), then at it (`playing`), its keys going to
+  // the game, not the walker.
+  let heading: Exhibit | null = null;
+  let playing: Exhibit | null = null;
+  const pressed = new Map<string, Pad>();
+  const release = () => {
+    for (const pad of pressed.values()) playing?.built.play?.pad(pad, false);
+    pressed.clear();
+  };
+  function leave() {
+    if (!heading && !playing) return;
+    if (heading) walker.stop();
+    release();
+    playing?.built.play?.stop();
+    heading = playing = null;
+    hud.play(null);
+  }
+
   // Where to stand for a page (an exhibit's address, or a wing's).
   const byHref = new Map<string, Exhibit>();
   for (const ex of exhibits)
@@ -234,6 +259,7 @@ async function run(plan: Plan, hud: Hud, materials: Materials, look: Look) {
     hud.show(null);
   };
   pages.onOpen = () => {
+    leave();
     shutTricks();
     walker.release();
     hud.release();
@@ -249,12 +275,48 @@ async function run(plan: Plan, hud: Hud, materials: Materials, look: Look) {
   walker.set(start);
   if (pages.mode === 'read') pages.onOpen?.();
 
+  const playAt = (ex: Exhibit) => {
+    const play = ex.built.play;
+    if (!play || heading || playing) return;
+    caption(null);
+    walker.release();
+    hud.release();
+    // Up to the screen, on the line out of its middle, near enough that it fills most of
+    // the view; or as near as the floor round the cabinet lets us.
+    const screen = play.screen;
+    screen.updateWorldMatrix(true, false);
+    const at = screen.getWorldPosition(new Vector3());
+    const out = screen.getWorldDirection(new Vector3());
+    const high = new Box3().setFromObject(screen).getSize(new Vector3()).y;
+    const away = high / 2 / Math.tan((camera.fov * Math.PI) / 360) / FILL;
+    const flat = Math.hypot(out.x, out.z);
+    let far = Math.sqrt(Math.max(away * away - (EYE - at.y) ** 2, 0.04));
+    const spot = (d: number): [number, number] => [
+      at.x + (out.x / flat) * d,
+      at.z + (out.z / flat) * d,
+    ];
+    while (far < away + 0.8 && !grid.test(spot(far))) far += 0.05;
+    const look: [number, number, number] = [at.x, at.y, at.z];
+    heading = ex;
+    const arrive = () => {
+      if (heading !== ex) return;
+      heading = null;
+      playing = ex;
+      play.start();
+      hud.play(play);
+    };
+    if (!walker.goTo(spot(far), look, arrive, 2)) arrive();
+  };
+  hud.onLeave = leave;
+  hud.onPad = (pad, down) => playing?.built.play?.pad(pad, down);
+
   // Going to see something.
   const caption = (c: Caption | null) => {
     shown = c;
     hud.show(c);
   };
   const go = (ex: Exhibit, entry: Entry | null) => {
+    leave();
     caption(null);
     const show = () =>
       entry && caption({ hung: ex.hung, entry, watch: Boolean(entry.film || entry.video) });
@@ -274,6 +336,7 @@ async function run(plan: Plan, hud: Hud, materials: Materials, look: Look) {
   hud.onWatch = (c) => {
     const src = c.entry.film ?? c.entry.video;
     if (!src) return;
+    leave();
     caption(null);
     const film = { src, poster: c.entry.image?.src, title: c.entry.title, kicker: c.entry.kicker };
     const { at, look } = c.hung.view;
@@ -287,6 +350,7 @@ async function run(plan: Plan, hud: Hud, materials: Materials, look: Look) {
     if (!walker.goTo(to, look, () => player.show(film), 2)) player.show(film);
   };
   hud.onGo = (hung, wing) => {
+    leave();
     if (pages.mode === 'read') pages.close(wing ?? HOME);
     const ex = hung && exhibits.find((x) => x.hung === hung);
     if (ex) go(ex, hung.entries[0] ?? null);
@@ -381,6 +445,12 @@ async function run(plan: Plan, hud: Hud, materials: Materials, look: Look) {
   canvas.addEventListener('pointerdown', (e) => {
     if (e.button !== 0 || pages.mode === 'read' || player.open) return;
     const u = under(e.clientX, e.clientY);
+    // At a cabinet, it's for playing: anywhere else on the canvas leaves.
+    const cab = playing ?? heading;
+    if (cab) {
+      if (u?.kind === 'exhibit' && u.ex === cab) return;
+      leave();
+    }
     const who = u?.kind === 'crew' ? u.who : null;
     const touch = e.pointerType === 'touch';
     down = { x: e.clientX, y: e.clientY, moved: 0, who, held: false, timer: 0, menu: false, touch };
@@ -418,7 +488,9 @@ async function run(plan: Plan, hud: Hud, materials: Materials, look: Look) {
     const u = under(e.clientX, e.clientY);
     if (u?.kind === 'crew') roam.poke(u.who);
     else if (u?.kind === 'exhibit') {
-      // One that does something when it's clicked (a living painting's one jumps out).
+      // A cabinet: up to it, to play. One that does something when it's clicked (a living
+      // painting's one jumps out).
+      if (u.ex.built.play) return playAt(u.ex);
       if (u.ex.built.poke) return u.ex.built.poke();
       // A second click on what's showing steps in.
       if (u.entry && u.entry === shown?.entry && !walker.moving) step(u.entry);
@@ -439,9 +511,11 @@ async function run(plan: Plan, hud: Hud, materials: Materials, look: Look) {
     canvas.dataset.over = !u
       ? ''
       : u.kind === 'exhibit'
-        ? u.ex.hung.entries.length
-          ? 'exhibit'
-          : 'art'
+        ? u.ex.built.play
+          ? 'play'
+          : u.ex.hung.entries.length
+            ? 'exhibit'
+            : 'art'
         : u.kind;
     roam.hover(u?.kind === 'crew' ? u.who : null);
     const part = u?.kind === 'exhibit' && u.part.userData.entry ? u.part : null;
@@ -455,6 +529,22 @@ async function run(plan: Plan, hud: Hud, materials: Materials, look: Look) {
   addEventListener('keydown', (e) => {
     if (pages.mode === 'read' || player.open || e.metaKey || e.ctrlKey || e.altKey) return;
     if (e.defaultPrevented) return;
+    // Playing, the keys are the game's (not the walker's, nor the controls card's); Esc
+    // leaves. Still on the way there, any other key is the walker's and leaves too.
+    if (e.code === 'Escape' && (heading || playing)) {
+      e.preventDefault();
+      return leave();
+    }
+    if (heading) leave();
+    if (playing) {
+      const pad = padOf(e.code);
+      if (!pad) return;
+      e.preventDefault();
+      if (e.repeat || pressed.has(e.code)) return;
+      pressed.set(e.code, pad);
+      playing.built.play!.pad(pad, true);
+      return;
+    }
     const typing = 'input, textarea, select, [contenteditable], .m-tricks';
     if ((e.target as HTMLElement).closest?.(typing)) return;
     walker.key(e.code, true);
@@ -462,10 +552,17 @@ async function run(plan: Plan, hud: Hud, materials: Materials, look: Look) {
     if (e.code.startsWith('Arrow') || e.code === 'Space') e.preventDefault();
   });
   addEventListener('keyup', (e) => {
+    const pad = pressed.get(e.code);
+    if (pad) {
+      pressed.delete(e.code);
+      playing?.built.play?.pad(pad, false);
+    }
     walker.key(e.code, false);
     hud.press(e.code, false);
   });
+  // (Away from the window, a game's buttons are let go: it's still there to come back to.)
   addEventListener('blur', () => {
+    release();
     walker.release();
     hud.release();
   });
@@ -546,6 +643,14 @@ async function run(plan: Plan, hud: Hud, materials: Materials, look: Look) {
     exhibits,
     go,
     step,
+    /** The arcade: the cabinet being played (or walked up to), and a way to go to one. */
+    arcade: {
+      get playing() {
+        return playing ?? heading;
+      },
+      play: playAt,
+      leave,
+    },
   };
   (window as unknown as { __museum: typeof debug }).__museum = debug;
 }

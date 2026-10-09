@@ -25,6 +25,9 @@ const WINGS = [
   { collection: 'blog', label: 'Library', template: 'bookshelf' },
 ];
 
+/** The arcade's games, a cabinet each (src/arcade/games.ts). */
+const ARCADE = ['blocks', 'racer', 'snake', 'bricks'];
+
 /** The site's pages, from src/routes, and the museum's plan. */
 const ROUTES = [
   ['/', 'index.astro'],
@@ -68,6 +71,7 @@ export default function museum(options = {}) {
     ],
     wings: options.wings ?? WINGS,
     filler: { density: 0.6, seed: 'museum', ...options.filler },
+    arcade: options.arcade === false ? [] : (options.arcade ?? ARCADE),
     building: options.building ?? null,
     buildingFile: null,
     templates: options.templates ?? [],

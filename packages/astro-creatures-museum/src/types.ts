@@ -39,11 +39,16 @@ export interface Options {
   /** Your own exhibit templates: modules exporting an ExhibitTemplate as default, relative
    * to the project root ('./src/museum/neon.ts'). */
   templates?: string[];
+  /** The arcade off the lobby, a cabinet to a game, in order: any of 'blocks', 'racer',
+   * 'snake' and 'bricks'. `false` or `[]`, and there's none. (It takes a side of the lobby
+   * no wing has: with a wing on every side, there's no room for it.) */
+  arcade?: string[] | false;
   crew?: Partial<Crew>;
 }
 
 /** The settings as the pages and the museum see them. */
-export interface Config extends Required<Omit<Options, 'crew' | 'filler' | 'building'>> {
+export interface Config extends Required<Omit<Options, 'crew' | 'filler' | 'building' | 'arcade'>> {
+  arcade: string[];
   crew: Crew;
   filler: { density: number; seed: string };
   building: string | null;

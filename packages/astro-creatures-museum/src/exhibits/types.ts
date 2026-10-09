@@ -5,6 +5,7 @@ import type { Character } from '@wisdomousai/creatures';
 import type { Object3D, Texture, Vector3 } from 'three';
 import type { Kit } from '../museum/kit';
 import type { Look, Materials } from '../museum/materials';
+import type { Pad } from '../arcade/types';
 import type { Entry, Footprint, Hung } from '../plan/types';
 
 /** What a template has to hand while it builds. */
@@ -51,6 +52,17 @@ export interface Built {
   /** Clicked, it does this (a living painting's one jumps out), and the visitor stays
    * where they are. */
   poke?(): void;
+  /** Clicked, the visitor goes up to it and plays (an arcade cabinet): its name, the keys
+   * and what they do for the card, the screen for the camera to fill the view with, and
+   * the game's start, stop and buttons. */
+  play?: {
+    title: string;
+    keys: { key: string; does: string }[];
+    screen: Object3D;
+    start(): void;
+    stop(): void;
+    pad(button: Pad, down: boolean): void;
+  };
 }
 
 export interface ExhibitTemplate {

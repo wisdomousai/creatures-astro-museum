@@ -342,3 +342,110 @@ test('who lives in a themed room has its floor to themselves, short of its piece
   const plain = generate(input());
   for (const l of plain.lanes) assert.equal(l.residents, undefined);
 });
+
+const GAMES = ['blocks', 'racer', 'snake', 'bricks'];
+/** The input with n wings (of the four there could be), and an arcade of these games. */
+const withArcade = (n, arcade = GAMES) => ({
+  ...input(),
+  wings: ['a', 'b', 'c', 'd'].slice(0, n).map((k) => ({
+    path: `/${k}`,
+    label: k,
+    entries: entries(k, 6),
+  })),
+  arcade,
+});
+
+test('the arcade is a room off the lobby on the first side no wing has, with a cabinet a game', () => {
+  for (const [n, door] of [
+    [0, [-9, 0]],
+    [2, [-9, 0]],
+    [3, [0, 7]],
+  ]) {
+    const plan = generate(withArcade(n));
+    const room = plan.rooms.find((r) => r.id === 'arcade');
+    assert.equal(room?.kind, 'arcade', `no arcade with ${n} wings`);
+    assert.equal(room.title, 'Arcade');
+    // Through a doorway in the lobby's wall, with its sign over it.
+    const d = plan.doors.find((d) => d.rooms[1] === 'arcade');
+    assert.deepEqual(d.rooms, ['lobby', 'arcade']);
+    assert.deepEqual([(d.a[0] + d.b[0]) / 2, (d.a[1] + d.b[1]) / 2], door);
+    assert.ok(plan.signs.some((s) => s.text === 'Arcade'));
+    // A cabinet each, in order, standing in the room, and a block for each to walk round.
+    const cabinets = plan.hung.filter((h) => h.template === 'arcade-cabinet');
+    assert.deepEqual(
+      cabinets.map((h) => h.game),
+      GAMES,
+    );
+    for (const h of cabinets) {
+      assert.equal(h.slot.room, 'arcade');
+      assert.equal(h.entries.length, 0);
+      const [x, , z] = h.slot.at;
+      assert.ok(x > room.min[0] && x < room.max[0] && z > room.min[1] && z < room.max[1]);
+      // (A block runs out from its back, which is on the wall.)
+      const [fx, fz] = [x + Math.sin(h.slot.yaw) * 0.4, z + Math.cos(h.slot.yaw) * 0.4];
+      assert.ok(
+        plan.blocks.some((b) => fx > b.min[0] && fx < b.max[0] && fz > b.min[1] && fz < b.max[1]),
+        `${h.slot.id} has no block`,
+      );
+    }
+    // Two of them are never closer than 1.3 m.
+    for (const [i, a] of cabinets.entries())
+      for (const b of cabinets.slice(i + 1))
+        assert.ok(Math.hypot(a.slot.at[0] - b.slot.at[0], a.slot.at[2] - b.slot.at[2]) >= 1.3);
+    // The visitor can walk to every one, to stand where its screen is seen.
+    const grid = new Grid(plan);
+    const from = [plan.spawn.at[0], plan.spawn.at[2]];
+    for (const h of cabinets) {
+      const to = [h.view.at[0], h.view.at[2]];
+      assert.ok(grid.test(to), `${h.slot.id}'s view is in something`);
+      assert.ok(grid.path(from, to).length >= 2, `no way to ${h.slot.id}`);
+      assert.equal(h.view.look[1], 1.35);
+    }
+    // It overlaps nothing, and nothing hangs over a post.
+    for (const o of plan.rooms.filter((o) => o !== room))
+      assert.ok(
+        Math.min(room.max[0], o.max[0]) - Math.max(room.min[0], o.min[0]) < 1e-6 ||
+          Math.min(room.max[1], o.max[1]) - Math.max(room.min[1], o.min[1]) < 1e-6,
+        `arcade overlaps ${o.id}`,
+      );
+    for (const h of plan.hung.filter((h) => h.slot.room === 'lobby' || h.slot.room === 'arcade'))
+      for (const w of plan.walls)
+        for (const p of [w.a, w.b]) {
+          const [dx, dz] = [p[0] - h.slot.at[0], p[1] - h.slot.at[2]];
+          const off = Math.abs(dx * Math.sin(h.slot.yaw) + dz * Math.cos(h.slot.yaw));
+          const t = Math.abs(dx * Math.cos(h.slot.yaw) - dz * Math.sin(h.slot.yaw));
+          assert.ok(off > 0.4 || t > h.slot.width / 2 + 0.26, `${h.slot.id} hangs over ${p}`);
+        }
+    // The crew come in along a lane, from a lobby lane.
+    const lane = plan.lanes.find((l) => l.room === 'arcade');
+    assert.ok(lane);
+    assert.ok(plan.links.some((k) => k.b.lane === 'arcade-a' || k.a.lane === 'arcade-a'));
+  }
+});
+
+test('no arcade with a wing on every side, or no games', () => {
+  assert.equal(
+    generate(withArcade(4)).rooms.some((r) => r.kind === 'arcade'),
+    false,
+  );
+  assert.equal(
+    generate(withArcade(4)).hung.some((h) => h.template === 'arcade-cabinet'),
+    false,
+  );
+  for (const arcade of [[], undefined]) {
+    const plan = generate({ ...withArcade(2), arcade });
+    assert.ok(!plan.rooms.some((r) => r.kind === 'arcade'));
+    assert.ok(!plan.hung.some((h) => h.game));
+  }
+});
+
+test('the arcade holds more games than the back wall has room for', () => {
+  const ids = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
+  const plan = generate(withArcade(2, ids));
+  const cabinets = plan.hung.filter((h) => h.template === 'arcade-cabinet');
+  assert.deepEqual(
+    cabinets.map((h) => h.game),
+    ids,
+  );
+  assert.equal(new Set(cabinets.map((h) => h.slot.at.join())).size, ids.length);
+});

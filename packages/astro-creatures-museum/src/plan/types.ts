@@ -47,7 +47,7 @@ export interface Entry {
 
 export interface Room {
   id: string;
-  kind: 'lobby' | 'hall' | 'alcove';
+  kind: 'lobby' | 'hall' | 'alcove' | 'arcade';
   /** The wing's label, for a hall (and a room off one); '' for the lobby. */
   wing: string;
   /** What it's called, if not its wing: a room of its own's exhibit. */
@@ -125,6 +125,8 @@ export interface Hung {
   entries: Entry[];
   /** Generated art's seed, and its sort ('painting' | 'sculpture'). */
   seed: number;
+  /** An arcade cabinet's game (src/arcade/games.ts). */
+  game?: string;
   /** Where to stand to see it. */
   view: View;
 }

@@ -51,6 +51,7 @@ export default defineConfig({
 | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `wings`     | A wing of halls off the lobby per collection, in order (the first is straight ahead). `label` goes on the sign over its doorway, `template` is how its pages are shown, and `path` is where they live, if not `/<collection>`.                                                                                      |
 | `filler`    | Generated art on the spare wall: `density` from 0 to 1, and a `seed` (change it for different art).                                                                                                                                                                                                                 |
+| `arcade`    | An arcade off the lobby, a cabinet to a game, in order: `['blocks', 'racer', 'snake', 'bricks']` (the default). Click one to walk up and play it with the arrows or W A S D, Space and Enter. `false` or `[]` for none. It takes a side of the lobby no wing has (the west, then the south): with a wing on every side there's no arcade. |
 | `crew`      | Who wanders the halls (`npx @wisdomousai/creatures list`; an empty roster means nobody), how many at once, and their look: `'ink'`, `'paper'` or `'colour'`. The building wears the look too. `respectReducedMotion` (on by default) leaves them out for visitors who ask for less motion, unless they add `?crew`. |
 | `building`  | A building of your own, made in Blender, from `public/` (see below). Without one, the halls are built from the kit, as long as your content needs.                                                                                                                                                                  |
 | `templates` | Your own exhibit templates, as files (see below).                                                                                                                                                                                                                                                                   |
@@ -97,6 +98,7 @@ Loops are best short (6 s), muted and small (720p at a high CRF). With `-movflag
 | `front-desk`       | The contact page: the lobby's front desk.                    |
 | `filler-painting`  | Generated art (it's what fills the walls).                   |
 | `filler-sculpture` | Generated sculpture.                                         |
+| `arcade-cabinet`   | An upright arcade machine with a game on its screen. Click it to walk up and play (the arcade, `arcade`). |
 | `living-painting`  | A deep frame with one of the crew in it. Click and out it jumps, into the room, and another comes up. Hung in place of some of the generated art; it needs the crew. |
 
 ### A film on a page

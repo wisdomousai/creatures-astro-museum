@@ -13,14 +13,18 @@ up, -y is the front: three.js's +z, toward the room):
     bench         a bench with a velvet cushion, 1.8 long along x
     desk          the front desk, 2.4 along x, its front to -y
     bookshelf     a bookcase, 1.8 wide, its shelves open to -y (the books are the site's)
+    arcade_cabinet  an upright arcade machine, 0.72 x 0.8 x 1.85, its back to +y (the screen
+                  and the marquee are flat recesses: the site fills them in)
     skylight      a lamp panel for the ceiling, hanging down from z = 0
     sign          a board for over a doorway, its words the site's
 
 Change one, then `npm run kit` (blender/build.sh) to rebuild assets/kit/kit.glb.
 """
 
+import math
+
 import kit
-from kit import box, cylinder, join, lathe, mirror_y, sphere
+from kit import box, cylinder, extrude, join, lathe, mirror_y, sphere
 
 HEIGHT = 4.0
 THICK = 0.2
@@ -147,6 +151,78 @@ def bookshelf():
     return join('bookshelf', parts)
 
 
+def _lean(obj, degrees, about):
+    """Turn a part about the x axis through `about` (y, z): the front tips down."""
+    a = math.radians(degrees)
+    c, s = math.cos(a), math.sin(a)
+    for v in obj.data.vertices:
+        y, z = v.co.y - about[0], v.co.z - about[1]
+        v.co.y, v.co.z = about[0] + y * c - z * s, about[1] + y * s + z * c
+    return obj
+
+
+def arcade_cabinet():
+    """Upright, like the ones in every arcade: a base with a coin door, a control panel
+    sloping toward the player with a joystick and two buttons, the screen leaning back in
+    a bay, a marquee box over it. Seen from the side (y, z; the front is -y), the screen
+    bay's face runs from (-0.30, 1.04) up to (-0.177, 1.62), 12 degrees back, 0.405 x 0.54
+    of it the screen; the marquee's face is the recess at y = -0.33, 0.65 x 0.17 about z 1.735."""
+    w, tip = 0.63, 30.3
+    side = [(-0.34, 0), (0.40, 0), (0.40, 1.85), (-0.36, 1.85), (-0.36, 1.62), (-0.177, 1.62),
+            (-0.30, 1.04), (-0.30, 1.00), (-0.42, 0.93), (-0.42, 0.86), (-0.34, 0.84)]
+    parts = [
+        extrude('side', side, -0.36, -w / 2, 'Trim', bevel=0.012),
+        extrude('side', side, w / 2, 0.36, 'Trim', bevel=0.012),
+        # The base, the control panel standing out over it, and the back.
+        box('base', (w, 0.74, 0.84), (0, 0.03, 0.42), 'Trim', bevel=0.012),
+        extrude('panel', [(-0.34, 0.84), (-0.42, 0.86), (-0.42, 0.93), (-0.30, 1.0), (-0.30, 0.84)],
+                -w / 2, w / 2, 'Velvet', bevel=0.014),
+        box('back', (w, 0.03, 1.01), (0, 0.385, 1.345), 'Trim'),
+        # The coin door, with its two slots.
+        box('door', (0.24, 0.02, 0.32), (0, -0.345, 0.45), 'Dark', bevel=0.008),
+        box('slot', (0.05, 0.012, 0.09), (-0.05, -0.356, 0.5), 'Brass', bevel=0.004),
+        box('slot', (0.05, 0.012, 0.09), (0.05, -0.356, 0.5), 'Brass', bevel=0.004),
+        box('stripe', (0.012, 0.12, 0.84), (-0.364, -0.05, 0.42), 'Velvet'),
+        box('stripe', (0.012, 0.12, 0.84), (0.364, -0.05, 0.42), 'Velvet'),
+        # The screen bay: a dark floor along the lean, and the bezel standing round it.
+        _lean(box('bay', (w, 0.03, 0.59), (0, -0.2385 + 0.0145, 1.33), 'Dark'), -12.2, (-0.2385, 1.33)),
+        _lean(box('bezel', (0.105, 0.045, 0.6), (-0.2625, -0.2385 - 0.0225, 1.33), 'Trim', bevel=0.01),
+              -12.2, (-0.2385, 1.33)),
+        _lean(box('bezel', (0.105, 0.045, 0.6), (0.2625, -0.2385 - 0.0225, 1.33), 'Trim', bevel=0.01),
+              -12.2, (-0.2385, 1.33)),
+        _lean(box('bezel', (w, 0.045, 0.04), (0, -0.2385 - 0.0225, 1.04), 'Trim', bevel=0.01),
+              -12.2, (-0.2385, 1.33)),
+        # The marquee: a box with a lip round its face, so the face is a recess.
+        box('marquee', (0.72, 0.73, 0.23), (0, 0.035, 1.735), 'Trim', bevel=0.012),
+        box('lip', (0.72, 0.03, 0.03), (0, -0.345, 1.835), 'Trim', bevel=0.008),
+        box('lip', (0.72, 0.03, 0.03), (0, -0.345, 1.635), 'Trim', bevel=0.008),
+        box('lip', (0.035, 0.03, 0.23), (-0.3425, -0.345, 1.735), 'Trim', bevel=0.008),
+        box('lip', (0.035, 0.03, 0.23), (0.3425, -0.345, 1.735), 'Trim', bevel=0.008),
+    ]
+    # Where the panel's top is, 30 degrees, from its front edge (-0.42, 0.93) back along it;
+    # what stands on it is made upright there, then leant to stand square to it.
+    d = (math.cos(math.radians(tip)), math.sin(math.radians(tip)))
+
+    def on_panel(s):
+        return (-0.42 + d[0] * s, 0.93 + d[1] * s)
+
+    for x, s, kind in ((-0.15, 0.075, 'stick'), (0.07, 0.05, 'a'), (0.19, 0.085, 'b')):
+        y, z = on_panel(s)
+        if kind == 'stick':
+            part = [
+                cylinder('plate', 0.045, 0.012, (x, y, z + 0.006), 'Dark', bevel=0.004, vertices=20),
+                cylinder('stem', 0.01, 0.09, (x, y, z + 0.055), 'Brass', vertices=10),
+                sphere('ball', 0.032, (x, y, z + 0.12), 'Plinth', segments=16, rings=10),
+            ]
+        else:
+            part = [
+                cylinder('button', 0.027, 0.022, (x, y, z + 0.011), 'Frame' if kind == 'a' else 'Plinth',
+                         bevel=0.007, vertices=20)
+            ]
+        parts += [_lean(p, tip, (y, z)) for p in part]
+    return join('arcade_cabinet', parts)
+
+
 def skylight():
     parts = [
         box('rim', (1.8, 1.8, 0.1), (0, 0, -0.05), 'Trim', bevel=0.03),
@@ -175,6 +251,7 @@ PIECES = {
     'bench': bench,
     'desk': desk,
     'bookshelf': bookshelf,
+    'arcade_cabinet': arcade_cabinet,
     'skylight': skylight,
     'sign': sign,
 }

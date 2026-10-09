@@ -11,6 +11,7 @@ import {
   SRGBColorSpace,
   type Texture,
 } from 'three';
+import { rng } from '../plan/rng';
 
 export type Look = 'ink' | 'paper' | 'colour';
 export type Role =
@@ -227,8 +228,9 @@ export class Materials {
     return new Color(rooms[i % rooms.length]);
   }
 
-  /** A floor for a room: big toy tiles in the lobby, boards in the halls. */
-  floor(kind: 'tiles' | 'boards'): Texture {
+  /** A floor for a room: big toy tiles in the lobby, boards in the halls, and the
+   * arcade's carpet. */
+  floor(kind: 'tiles' | 'boards' | 'carpet'): Texture {
     const key = `floor-${kind}`;
     const hit = this.textures.get(key);
     if (hit) return hit;
@@ -236,7 +238,58 @@ export class Materials {
     const c = document.createElement('canvas');
     c.width = c.height = 512;
     const g = c.getContext('2d')!;
-    if (kind === 'tiles') {
+    if (kind === 'carpet') {
+      // Two metres of an arcade's carpet: shapes and squiggles scattered on a dark ground,
+      // each drawn again over the edges it crosses so the tiles join.
+      const ground = this.look === 'colour' ? '#1b1640' : this.look === 'ink' ? '#1a1a18' : '#dcdcd6';
+      const marks =
+        this.look === 'colour'
+          ? ['#ff4d9d', '#2ee6d6', '#ffd23f', '#7a5cff', '#ff8a3d']
+          : this.look === 'ink'
+            ? ['#5d5d57', '#7c7c75', '#46463f']
+            : ['#1a1a19', '#8d8d86', '#b5b5ae'];
+      g.fillStyle = ground;
+      g.fillRect(0, 0, 512, 512);
+      const r = rng(7);
+      g.lineWidth = 7;
+      g.lineCap = g.lineJoin = 'round';
+      for (let i = 0; i < 34; i++) {
+        const [x, y, turn, shape] = [r() * 512, r() * 512, r() * Math.PI * 2, i % 5];
+        const colour = marks[Math.floor(r() * marks.length)];
+        for (const dx of [-512, 0, 512])
+          for (const dy of [-512, 0, 512]) {
+            g.save();
+            g.translate(x + dx, y + dy);
+            g.rotate(turn);
+            g.fillStyle = g.strokeStyle = colour;
+            g.beginPath();
+            if (shape === 0) g.arc(0, 0, 11, 0, Math.PI * 2);
+            else if (shape === 1) {
+              g.arc(0, 0, 15, 0, Math.PI * 2);
+              g.stroke();
+              g.beginPath();
+            } else if (shape === 2) {
+              // A squiggle.
+              g.moveTo(-34, 0);
+              for (let k = 1; k <= 12; k++) g.lineTo(-34 + k * 5.7, Math.sin(k * 1.05) * 9);
+              g.stroke();
+            } else if (shape === 3) {
+              g.moveTo(0, -17);
+              g.lineTo(15, 12);
+              g.lineTo(-15, 12);
+              g.closePath();
+            } else {
+              g.moveTo(-14, 0);
+              g.lineTo(14, 0);
+              g.moveTo(0, -14);
+              g.lineTo(0, 14);
+              g.stroke();
+            }
+            if (shape === 0 || shape === 3) g.fill();
+            g.restore();
+          }
+      }
+    } else if (kind === 'tiles') {
       // Two metres of floor: four tiles, a checker with rounded grout.
       g.fillStyle = shade(b, -0.12);
       g.fillRect(0, 0, 512, 512);

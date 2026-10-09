@@ -104,6 +104,26 @@ def cylinder(name, radius, depth, at, mat, bevel=0.0, segments=3, vertices=24, a
     return _finish(obj, mat, bevel, segments, True)
 
 
+def extrude(name, profile, x0, x1, mat, bevel=0.0, segments=2):
+    """A side profile, (y, z) points round the outline, made solid from x0 to x1."""
+    bm = bmesh.new()
+    near = [bm.verts.new((x0, y, z)) for y, z in profile]
+    far = [bm.verts.new((x1, y, z)) for y, z in profile]
+    n = len(profile)
+    bm.faces.new(near)
+    bm.faces.new(far[::-1])
+    for i in range(n):
+        j = (i + 1) % n
+        bm.faces.new((near[i], near[j], far[j], far[i]))
+    bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
+    me = bpy.data.meshes.new(name)
+    bm.to_mesh(me)
+    bm.free()
+    obj = bpy.data.objects.new(name, me)
+    bpy.context.collection.objects.link(obj)
+    return _finish(obj, mat, bevel, segments, True)
+
+
 def sphere(name, radius, at, mat, segments=16, rings=10, squash=1.0):
     bpy.ops.mesh.primitive_uv_sphere_add(segments=segments, ring_count=rings, radius=radius, location=at)
     obj = bpy.context.active_object

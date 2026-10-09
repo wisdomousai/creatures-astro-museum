@@ -213,7 +213,7 @@ export function build(plan: Plan, kit: Kit, materials: Materials): Building {
       parts.add('skylight', place(x, plan.height, z));
     }
     // Its floor and ceiling.
-    const tex = materials.floor(r.kind === 'lobby' ? 'tiles' : 'boards').clone();
+    const tex = materials.floor(r.kind === 'lobby' ? 'tiles' : r.kind === 'arcade' ? 'carpet' : 'boards').clone();
     tex.repeat.set(w / 2, d / 2);
     tex.needsUpdate = true;
     const floor = new Mesh(

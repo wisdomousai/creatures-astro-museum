@@ -1,7 +1,9 @@
 // What's over the halls: the site's name and the room you're in, a map (every wing and
 // exhibit, as links, so the museum can be gone round by keyboard and read by a screen
 // reader), the controls till you've walked and looked round, the caption of the exhibit you've come to, and the
-// way back out of a page.
+// way back out of a page. At an arcade cabinet, a card of its keys instead (and, on a
+// touch screen, a pad to press them with).
+import type { Pad } from '../arcade/types';
 import type { Entry, Hung, Plan } from '../plan/types';
 import type { Palette } from './materials';
 
@@ -17,6 +19,8 @@ export class Hud {
   private room: HTMLElement;
   private hint: HTMLElement;
   private caption: HTMLElement;
+  private card: HTMLElement;
+  private touch: HTMLElement;
   private index: HTMLElement;
   private loading: HTMLElement;
   private mapButton: HTMLButtonElement;
@@ -24,6 +28,9 @@ export class Hud {
   onWatch?: (c: Caption) => void;
   onGo?: (hung: Hung | null, wing: string | null) => void;
   onClose?: () => void;
+  /** Playing: a button of the pad on screen pressed or let go, or the way out taken. */
+  onPad?: (button: Pad, down: boolean) => void;
+  onLeave?: () => void;
   private current: Caption | null = null;
   private keys = new Map<string, HTMLElement>();
   private done = new Set<'walk' | 'look'>();
@@ -73,6 +80,24 @@ export class Hud {
           <button class="m-button m-watch" type="button" hidden>Watch <span aria-hidden="true">▶</span></button>
         </p>
       </section>
+      <section class="m-play" aria-label="Playing" hidden>
+        <p class="m-kicker">Now playing</p>
+        <h2 class="m-title"></h2>
+        <ul class="m-play-keys"></ul>
+        <p class="m-do"><button class="m-button m-leave" type="button"><kbd>Esc</kbd> to leave</button></p>
+      </section>
+      <div class="m-touch" hidden>
+        <div class="m-dpad">
+          <button type="button" data-pad="up" aria-label="Up">↑</button>
+          <button type="button" data-pad="left" aria-label="Left">←</button>
+          <button type="button" data-pad="right" aria-label="Right">→</button>
+          <button type="button" data-pad="down" aria-label="Down">↓</button>
+        </div>
+        <div class="m-ab">
+          <button type="button" data-pad="b" aria-label="B">B</button>
+          <button type="button" data-pad="a" aria-label="A">A</button>
+        </div>
+      </div>
       <p class="m-loading" role="status">Opening the museum…</p>`;
     // The way back from a page: over the page, so not in the museum's own layer.
     const close = document.createElement('button');
@@ -92,6 +117,28 @@ export class Hud {
     for (const k of this.hint.querySelectorAll<HTMLElement>('[data-key]'))
       this.keys.set(k.dataset.key!, k);
     this.caption = root.querySelector('.m-caption')!;
+    this.card = root.querySelector('.m-play')!;
+    this.touch = root.querySelector('.m-touch')!;
+    root.querySelector('.m-leave')!.addEventListener('click', () => this.onLeave?.());
+    // The pad on screen: a finger down presses, up (or away) lets go; held without scrolling.
+    for (const b of this.touch.querySelectorAll<HTMLElement>('[data-pad]')) {
+      const pad = b.dataset.pad as Pad;
+      let held = false;
+      const set = (down: boolean) => {
+        if (held === down) return;
+        held = down;
+        b.classList.toggle('m-on', down);
+        this.onPad?.(pad, down);
+      };
+      b.addEventListener('pointerdown', (e) => {
+        e.preventDefault();
+        b.setPointerCapture(e.pointerId);
+        set(true);
+      });
+      for (const type of ['pointerup', 'pointercancel', 'lostpointercapture'])
+        b.addEventListener(type, () => set(false));
+      b.addEventListener('contextmenu', (e) => e.preventDefault());
+    }
     this.index = root.querySelector('.m-index')!;
     this.loading = root.querySelector('.m-loading')!;
     this.mapButton = root.querySelector('.m-map')!;
@@ -191,6 +238,27 @@ export class Hud {
     if (this.done.has(how)) return;
     this.done.add(how);
     if (this.done.size === 2) setTimeout(() => this.hint.classList.add('m-gone'), 1500);
+  }
+
+  /** The card for playing a game (its title and keys), or none. On a touch screen the pad
+   * comes up too. The controls make way for it. */
+  play(game: { title: string; keys: { key: string; does: string }[] } | null) {
+    this.card.hidden = !game;
+    this.touch.hidden = !game || !matchMedia('(pointer: coarse)').matches;
+    this.hint.classList.toggle('m-playing', !!game);
+    if (!game) return;
+    this.card.querySelector('.m-title')!.textContent = game.title;
+    this.card.querySelector('.m-play-keys')!.replaceChildren(
+      ...game.keys
+        .filter((k) => k.key !== 'Esc')
+        .map((k) => {
+          const li = document.createElement('li');
+          const kbd = document.createElement('kbd');
+          kbd.textContent = k.key;
+          li.append(kbd, ` ${k.does}`);
+          return li;
+        }),
+    );
   }
 
   show(c: Caption | null) {

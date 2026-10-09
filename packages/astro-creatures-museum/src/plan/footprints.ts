@@ -28,6 +28,8 @@ export const FOOTPRINTS: Record<string, (e: Entry | null, r: number) => Footprin
   plaque: () => ({ mount: 'wall', width: 1.0, height: 0.7 }),
   'about-wall': () => ({ mount: 'wall', width: 3.6, height: 2.4 }),
   bookshelf: () => ({ mount: 'wall', width: 1.8, height: 2.3, holds: 9, stands: true }),
+  // An upright arcade cabinet, stood against the wall (src/arcade).
+  'arcade-cabinet': () => ({ mount: 'wall', width: 0.9, height: 1.9, stands: true }),
   'plinth-object': () => ({ mount: 'floor', width: 1.1, height: 1.1 }),
   'front-desk': () => ({ mount: 'floor', width: 2.6, height: 1.1 }),
   'filler-painting': (_, r) => {

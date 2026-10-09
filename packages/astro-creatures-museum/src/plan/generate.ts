@@ -40,6 +40,8 @@ export interface Input {
   measure?: (template: string, entry: Entry | null, r: number) => Footprint;
   /** The themed rooms' sizes and what stands in them (assets/rooms/rooms.json). */
   themes?: Record<string, ThemeSpec>;
+  /** The arcade's games, a cabinet each, in order (src/arcade/games.ts). None, no arcade. */
+  arcade?: string[];
 }
 
 /** The walls' height, a doorway's size and the eye's height. */
@@ -61,6 +63,9 @@ const LOBBY: { min: V2; max: V2 } = { min: [-9, -7], max: [9, 7] };
 /** A room of its own off a hall (an exhibit with `room: true`): as wide along the hall's
  * wall and as deep behind it. */
 const ALCOVE = { width: 5, depth: 5.5 };
+/** The arcade: a room as wide as a hall, this deep, with its cabinets stood against the
+ * walls (a cabinet is this wide and this deep, and the visitor stands this far from it). */
+const ARCADE = { depth: 7, cabinet: 0.9, deep: 0.84, apart: 1.5, view: 1.6 };
 /** A themed room's crew keep this far from its side walls (its trees and rocks are there). */
 const CORNERS = 2.2;
 /** One wall painting in so many (by its seed) is a living one. */
@@ -173,6 +178,7 @@ export function generate(input: Input): Plan {
     template: string,
     entries: Entry[],
     seed: number,
+    extra?: { game: string; view: View },
   ) => {
     // (Hung things clear the wall's rails, which stand RAIL proud of it.)
     const face = add(p, n, WALL / 2 + (fp.stands ? 0 : RAIL));
@@ -187,8 +193,8 @@ export function generate(input: Input): Plan {
       height: r3(fp.height),
     };
     const back = Math.min(Math.max(Math.max(fp.width, fp.height) * 1.15 + 0.6, 2.2), 5.5);
-    const view: View = { at: v3(add(face, n, back), EYE), look: v3(face, y) };
-    hung.push({ slot, template, entries, seed, view });
+    const view: View = extra?.view ?? { at: v3(add(face, n, back), EYE), look: v3(face, y) };
+    hung.push({ slot, template, entries, seed, view, ...(extra && { game: extra.game }) });
   };
 
   /** Stand it on the floor at `p`, facing `n`. */
@@ -220,6 +226,10 @@ export function generate(input: Input): Plan {
   // ---------- The lobby ----------
   const used = input.wings.slice(0, SIDES.length);
   const doorOn = new Set(used.map((_, i) => SIDES[i]));
+  // The arcade, if there are games: on the first of these sides no wing has.
+  const games = input.arcade ?? [];
+  const arcadeOn = games.length ? (['w', 's'] as Side[]).find((s) => !doorOn.has(s)) : undefined;
+  if (arcadeOn) doorOn.add(arcadeOn);
   rooms.push({
     id: 'lobby',
     kind: 'lobby',
@@ -715,6 +725,92 @@ export function generate(input: Input): Plan {
       at = fr.p(length, 0);
     });
   });
+
+  // ---------- The arcade ----------
+  // A room off the lobby like a hall's first, but a room of its own: cabinets against the
+  // back wall, then the side walls, each facing in; the crew come in along its middle.
+  if (arcadeOn) {
+    const f = OUT[arcadeOn];
+    const fr = new Frame(DOORWAY[arcadeOn], f);
+    const half = HALL.width / 2;
+    const D = ARCADE.depth;
+    const r = fr.r;
+    const corners = [fr.p(0, -half), fr.p(D, half)];
+    rooms.push({
+      id: 'arcade',
+      kind: 'arcade',
+      wing: '',
+      title: 'Arcade',
+      min: [Math.min(corners[0][0], corners[1][0]), Math.min(corners[0][1], corners[1][1])],
+      max: [Math.max(corners[0][0], corners[1][0]), Math.max(corners[0][1], corners[1][1])],
+      forward: f,
+    });
+    doors.push({
+      a: fr.p(0, -DOOR.width / 2),
+      b: fr.p(0, DOOR.width / 2),
+      rooms: ['lobby', 'arcade'],
+    });
+    signs.push({
+      text: 'Arcade',
+      at: v3(add(DOORWAY[arcadeOn], f, -WALL / 2 - 0.01), DOOR.height + 0.5),
+      yaw: r3(yawOf(neg(f))),
+    });
+    side(fr.p(0, -half), fr.p(D, -half), false, 'arcade');
+    side(fr.p(D, half), fr.p(0, half), false, 'arcade');
+    side(fr.p(D, -half), fr.p(D, half), false, 'arcade');
+
+    // The back wall takes up to five, spread evenly; the side walls the rest, left then
+    // right, from the back corners toward the door (clear of the back wall's end ones).
+    const nb = Math.min(games.length, 5);
+    const apart = nb > 4 ? 1.4 : ARCADE.apart;
+    const spots: { p: V2; n: V2 }[] = [];
+    for (let i = 0; i < nb; i++) spots.push({ p: fr.p(D, (i - (nb - 1) / 2) * apart), n: neg(f) });
+    for (let i = 0; spots.length < games.length && i < 6; i++) {
+      const u = D - 1.9 - Math.floor(i / 2) * ARCADE.apart;
+      if (u < 2) break;
+      spots.push(i % 2 ? { p: fr.p(u, half), n: neg(r) } : { p: fr.p(u, -half), n: r });
+    }
+    const fp = measure('arcade-cabinet', null, 0.5);
+    spots.forEach(({ p, n }, i) => {
+      const id = `arcade-${i + 1}`;
+      // The visitor stands in front of its screen, looking at it.
+      const face = add(p, n, WALL / 2);
+      const view: View = {
+        at: v3(add(face, n, ARCADE.deep + ARCADE.view), EYE),
+        look: v3(add(face, n, 0.64), 1.35),
+      };
+      hangOn('arcade', id, p, n, fp, 'arcade-cabinet', [], seedOf(id), { game: games[i], view });
+      // And the nav grid walks round it.
+      const wx = (Math.abs(n[1]) * ARCADE.cabinet) / 2;
+      const wz = (Math.abs(n[0]) * ARCADE.cabinet) / 2;
+      const [ox, oz] = add(face, n, ARCADE.deep);
+      blocks.push({
+        min: [r3(Math.min(face[0] - wx, ox - wx)), r3(Math.min(face[1] - wz, oz - wz))],
+        max: [r3(Math.max(face[0] + wx, ox + wx)), r3(Math.max(face[1] + wz, oz + wz))],
+      });
+    });
+    // Two strips for the crew, in and out along the middle, short of the back cabinets.
+    lanes.push({
+      id: 'arcade-a',
+      room: 'arcade',
+      at: fr.p(1.2, -0.7),
+      along: f,
+      length: D - 3.6,
+      width: 2,
+    });
+    lanes.push({
+      id: 'arcade-b',
+      room: 'arcade',
+      at: fr.p(D - 2.4, 0.7),
+      along: neg(f),
+      length: D - 3.6,
+      width: 2,
+    });
+    // In from the lobby's lane nearest the door, and round at the far end.
+    if (arcadeOn === 'w') link('lobby', 'start', 'arcade-a', 'start');
+    else link('lobby-s', 'start', 'arcade-a', 'start');
+    link('arcade-a', 'end', 'arcade-b', 'start');
+  }
 
   return {
     version: 1,
