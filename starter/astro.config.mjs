@@ -25,7 +25,12 @@ export default defineConfig({
       // public/. The sample's is there: `MUSEUM_BUILDING=1 npm run dev` walks it.
       building: process.env.MUSEUM_BUILDING ? '/museum/building.glb' : undefined,
       // Who wanders the halls: `npx @wisdomousai/creatures list` says who there is.
-      crew: { roster: ['bolt', 'dog', 'cat', 'corgi', 'hedgehog', 'owl'], look: 'colour' },
+      // A crowd: up to ten out at once on a big screen, all over the place.
+      crew: {
+        roster: ['bolt', 'dog', 'cat', 'corgi', 'hedgehog', 'owl', 'duck', 'bunny', 'fox', 'penguin', 'bear', 'squirrel', 'vacuum', 'snail', 'turtle', 'pug', 'raven', 'drone', 'kitten', 'beagle'],
+        max: [4, 10],
+        look: 'colour',
+      },
     }),
   ],
 });

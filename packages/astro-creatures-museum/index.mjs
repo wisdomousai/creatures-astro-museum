@@ -70,8 +70,8 @@ export default function museum(options = {}) {
     buildingFile: null,
     templates: options.templates ?? [],
     crew: {
-      roster: ['bolt', 'dog', 'cat', 'corgi', 'hedgehog', 'owl'],
-      max: [2, 3],
+      roster: ['bolt', 'dog', 'cat', 'corgi', 'hedgehog', 'owl', 'duck', 'bunny', 'fox', 'penguin', 'bear', 'squirrel', 'vacuum', 'snail', 'turtle', 'pug', 'raven', 'drone', 'kitten', 'beagle'],
+      max: [4, 10],
       look: 'colour',
       respectReducedMotion: true,
       ...options.crew,

@@ -51,7 +51,7 @@
     "@fontsource-variable/newsreader": "^5.3.0",
     "@fontsource-variable/schibsted-grotesk": "^5.3.0",
     "@fontsource/maple-mono": "^5.3.0",
-    "@wisdomousai/creatures": "^0.6.0",
+    "@wisdomousai/creatures": "^0.6.1",
     "astro-expressive-code": "^0.44.1",
     "three": "^0.186.1"
   },

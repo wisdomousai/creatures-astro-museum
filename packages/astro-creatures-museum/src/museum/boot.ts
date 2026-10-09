@@ -171,6 +171,10 @@ async function run(plan: Plan, hud: Hud, materials: Materials, look: Look) {
     max: config.crew.max[1],
     look,
     castShadows: true,
+    // All over the place: soon, often, two to a lane, in every room near enough to see.
+    every: [1.2, 4],
+    near: 30,
+    perLane: 2,
   });
   roam.enabled = wantCrew();
 

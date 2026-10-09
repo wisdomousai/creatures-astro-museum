@@ -308,6 +308,15 @@ export function generate(input: Input): Plan {
     length: 12.8,
     width: 3.6,
   });
+  // And one by the way in, facing the lobby's middle: crew round the visitor's feet.
+  lanes.push({
+    id: 'lobby-s',
+    room: 'lobby',
+    at: [2.4, 3.6], // (clear of the front desk)
+    along: [-1, 0],
+    length: 8.8,
+    width: 2.6,
+  });
 
   /**
    * A room of its own for an exhibit (`room: true`), behind a doorway in a hall's wall at
@@ -348,6 +357,16 @@ export function generate(input: Input): Plan {
     wall(b0, b1);
     wall(b1, c1);
     doors.push({ a: add(c, f, -DOOR.width / 2), b: add(c, f, DOOR.width / 2), rooms: [hall, id] });
+    // A strip for the crew across it, facing the doorway: visitors to the piece.
+    const along: V2 = [-out[1], out[0]];
+    lanes.push({
+      id: `${id}-lane`,
+      room: id,
+      at: add(add(c, out, 1.2), along, -(half - 0.7)),
+      along,
+      length: 2 * (half - 0.7),
+      width: 2.4,
+    });
     signs.push({
       text: e.title,
       at: v3(add(c, out, -WALL / 2 - 0.01), DOOR.height + 0.5),
