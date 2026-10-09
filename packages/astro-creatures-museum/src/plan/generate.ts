@@ -451,7 +451,7 @@ export function generate(input: Input): Plan {
     let at = DOORWAY[s];
     let parent = 'lobby';
     halls.forEach((hall, h) => {
-      const id = `${wing.path.replace(/^\//, '') || 'wing'}-${h + 1}`;
+      const id = `${wing.path.split('/').filter(Boolean).pop() ?? 'wing'}-${h + 1}`; // (not the site's base)
       const fr = new Frame(at, f);
       const run = Math.max(hall.used.left, hall.used.right, hall.used.floor);
       const length = Math.min(HALL.max, Math.max(HALL.min, Math.ceil(run + 2 * END)));
