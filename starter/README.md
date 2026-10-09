@@ -1,105 +1,96 @@
-# Creatures Astro starter
+# Creatures Astro museum starter
 
-A small Astro site (a blog, projects, an about page, a contact page) with toy robots living
-in it. Every word is lorem ipsum, put there so you can see where yours go.
+A portfolio you can walk round: a small Astro site (projects, a blog, an about page, a
+contact page) shown as a museum. Every word is lorem ipsum, and every picture and film is a
+placeholder, put there so you can see where yours go.
 
 ```sh
-npm create astro@latest -- --template wisdomousai/creatures-astro-starter/starter
+npm create astro@latest -- --template wisdomousai/creatures-astro-museum/starter
 cd your-site
 npm run dev
 ```
 
-How your words are shown is a shell, set in `astro.config.mjs`:
+[See it](https://wisdomousai.github.io/creatures-astro-museum/)
 
-- **clean** (the default): the site as it is, with a frame round the window and robots who
-  live on it. Every so often one turns up, walks along the frame or flies up its sides, has
-  a look at what you're reading and goes home. Poke one and it jumps. Poke it three times
-  quickly and it gets dizzy. Hold one down and it follows the pointer.
-  [See it](https://wisdomousai.github.io/creatures-astro-starter/clean/)
-- **room**: the same pages, played inside a little room, on a monitor standing on the
-  floor. A tuner across the top is the navigation, each section has a painted room of its
-  own, and the front page is a lobby where robots hold up signs for the sections.
-  [See it](https://wisdomousai.github.io/creatures-astro-starter/room/)
+You come in at the lobby, with the about wall and the front desk. Off the lobby is a wing
+of halls per collection: projects hang as framed pictures that play their loops while you
+stand in front of them, and posts are books on shelves. Generated art fills the spare wall.
+Click an exhibit to go and stand before it, then step in, and its page opens over the halls
+at its own address. Toy robots wander about. The plain site is always one click away
+(**Plain site**, or `?flat`), and it's what search engines see.
 
-```js
-creatures({ shell: 'room' });
-```
-
-The shells come from [`@wisdomousai/astro-creatures`](https://www.npmjs.com/package/@wisdomousai/astro-creatures).
+It all comes from [`@wisdomousai/astro-creatures-museum`](https://www.npmjs.com/package/@wisdomousai/astro-creatures-museum).
 This folder holds only what's yours.
 
 ## Where things are
 
-|                         |                                                                                    |
-| ----------------------- | ---------------------------------------------------------------------------------- |
-| `astro.config.mjs`      | Your address, the shell, the title, your email and links, and who comes by.        |
-| `src/content/pages/`    | `about.md` and `contact.md`.                                                       |
-| `src/content/blog/`     | Posts, in Markdown or MDX. `_template.md` has the fields.                          |
-| `src/content/projects/` | Projects. One with a body gets a page of its own; one with only a `url` links out. |
-| `public/og.png`         | The picture shown when someone shares a link.                                      |
-| `public/favicon.svg`    | The icon in the tab.                                                               |
+|                         |                                                                                  |
+| ----------------------- | -------------------------------------------------------------------------------- |
+| `astro.config.mjs`      | Your address, title, email and links, the wings, the art, and who wanders about. |
+| `src/content/pages/`    | `about.md` (the about wall) and `contact.md` (the front desk).                   |
+| `src/content/projects/` | Projects, one exhibit each. `_template.md` has the fields.                       |
+| `src/content/blog/`     | Posts, the Library's books. `_template.md` has the fields.                       |
+| `src/assets/projects/`  | Covers and gallery pictures.                                                     |
+| `public/museum/`        | Loops and films (and a building of your own, if you make one).                   |
+| `public/og.png`         | The picture shown when someone shares a link.                                    |
 
 Files starting with `_` are never published, and neither is anything with `draft: true`
 (drafts do show in `npm run dev`).
 
-## Choosing the crew
+## An exhibit
+
+A project hangs with its `cover`. An `exhibit` block says more:
+
+```yaml
+cover: ../../assets/projects/lorem.jpg
+exhibit:
+  video: /museum/lorem.mp4 # a 6 s muted loop, played in the frame
+  film: /museum/lorem-film.mp4 # the whole film, with sound: a Watch button plays it
+  size: l
+  room: true # a room of its own off the hall…
+  gallery: # …with these on its walls
+    - ../../assets/projects/lorem-1.jpg
+```
+
+A loop from your own footage:
+
+```sh
+ffmpeg -i in.mov -t 6 -an -vf scale=1280:-2 -c:v libx264 -crf 28 -preset slow \
+  -pix_fmt yuv420p -movflags +faststart public/museum/lorem.mp4
+```
+
+In an MDX page, `<Film src="/museum/lorem-film.mp4" />` shows a film in the museum's
+player. The package's README lists every template and option.
+
+## The crew
 
 ```sh
 npx @wisdomousai/creatures list
 ```
 
-shows the 149 in the box. Put the ones you like in `crew.roster`:
+shows who there is. Put the ones you like in `crew.roster` (an empty roster means nobody
+comes). Visitors who ask their browser for less motion get the museum without them, unless
+they add `?crew`.
 
-```js
-crew: {
-  roster: ['bolt', 'owl', 'cat'],
-  first: 'bolt',   // who comes soon after the page loads
-  max: 2,          // how many at once
-  every: [10, 25], // seconds between arrivals
-},
-```
+## A building of your own
 
-An empty roster turns them off. In the clean shell, visitors who ask their browser for less
-motion get the site without them (`respectReducedMotion: false` brings them back).
-
-In the clean shell their models come from jsDelivr, pinned to the version installed. The
-room serves them from your own site, out of `node_modules`, because it paints its rooms'
-pictures on a canvas, and a browser won't read back a canvas with another site's picture on
-it. That's why a room build is about 50 MB.
-
-## The room's stations
-
-The room's stations, the rooms they're in and the lobby's sign holders all have defaults.
-To change them, pass `stations` and `lobby`:
-
-```js
-stations: [
-  { key: 'home', label: 'Home', href: '/', room: null, dress: 'home' },
-  { key: 'blog', label: 'Writing', href: '/blog', room: 'office', dress: 'home' },
-  // …
-],
-```
-
-`room` is `jungle`, `office`, `lab`, or `null` for the plain white box, and `dress` names
-the furniture and hangings it brings (`home`, `work`, `about`, `contact`,
-`creatures/birds`). The package's README has the rest.
+Instead of the generated halls, you can make the building in Blender:
+[`blender/buildings`](https://github.com/wisdomousai/creatures-astro-museum/tree/main/blender/buildings)
+has the conventions and a sample. Put its `.glb` in `public/museum/` and set
+`building: '/museum/building.glb'`.
 
 ## Putting it online
 
 `npm run build` makes a static site in `dist/`. Set `site` in `astro.config.mjs` to your
-address. Cloudflare Pages, Netlify and Vercel all take it as it is. For GitHub Pages under a
-repo name, build with `BASE=/your-repo/` and `SITE=https://you.github.io`, and every link
+address. Cloudflare Pages, Netlify and Vercel all take it as it is. For GitHub Pages under
+a repo name, build with `BASE=/your-repo/` and `SITE=https://you.github.io`, and every link
 follows.
 
 ## Have an agent set it up
 
-`.claude/skills/creatures-setup/` teaches a coding agent to turn this into your site: your
-words in place of the lorem ipsum (it asks you for them), your shell and crew, and a deploy.
-To have it make you a robot of your own, too:
-
-```sh
-npx @wisdomousai/creatures skill
-```
+`.claude/skills/museum-setup/` teaches a coding agent to turn this into your site. It puts
+your words in place of the lorem ipsum (asking you for them), your pictures and films in
+the frames, and your wings and crew in the config, and it can deploy it.
 
 ## Commands
 

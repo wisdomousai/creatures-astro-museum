@@ -5,6 +5,8 @@ import { getCollection, type CollectionEntry } from 'astro:content';
 import type { ImageMetadata } from 'astro';
 import { readFileSync } from 'node:fs';
 import { authored, readGlb } from './plan/authored';
+import own from 'virtual:astro-creatures-museum/templates';
+import { footprint } from './plan/footprints';
 import { generate } from './plan/generate';
 import type { Entry, Picture, Plan } from './plan/types';
 import { getPosts, hasCaseStudy, page } from './lib';
@@ -135,6 +137,9 @@ export async function museumPlan(): Promise<Plan> {
     about: await entry('pages', 'about', { ...about.data, title: about.data.title }, 'about-wall', url('/about'), true, site.author),
     contact: await entry('pages', 'contact', contact.data, 'front-desk', url('/contact'), true, site.email),
     filler: site.filler,
+    // (The site's own templates say how much room they want; the rest, the built-in's.)
+    measure: (template: string, e: Entry | null, r: number) =>
+      own.find((t) => t.id === template)?.footprint?.(e, r) ?? footprint(template, e, r),
   };
   if (!site.building || !site.buildingFile) return generate(input);
   // A building of the site's own: its plan from its names (plan/authored.ts).
