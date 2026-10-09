@@ -1,15 +1,16 @@
 // The visitor: eyes 1.6 m up, walking. Click somewhere and they glide there round whatever's
-// in the way; walk with W A S D (or the arrows), look round by dragging. Walls and plinths
+// in the way; walk with W A S D, look round with the arrows or by dragging. Walls and plinths
 // push back. For visitors who'd rather nothing moved, a glide is a cut.
 import { type PerspectiveCamera, Vector3 } from 'three';
 import { collide, type Grid } from '../nav/grid';
 import { EYE } from '../plan/generate';
 import type { V2, V3, View } from '../plan/types';
 
-/** A gallery stroll (m/s), with Shift a brisk walk; turning with the keys (rad/s). */
+/** A gallery stroll (m/s), with Shift a brisk walk; turning and tilting with the keys (rad/s). */
 const SPEED = 1.5;
 const RUN = 2.8;
 const TURN = 1.3;
+const TILT = 0.9;
 const LOOK = 0.0042;
 
 export class Walker {
@@ -20,12 +21,18 @@ export class Walker {
   yaw = 0;
   pitch = 0;
   /** A glide under way: the points still ahead, and where to look at the end. */
-  private route: { points: V2[]; look: V3 | null; done?: () => void; speed: number; t: number } | null = null;
+  private route: {
+    points: V2[];
+    look: V3 | null;
+    done?: () => void;
+    speed: number;
+    t: number;
+  } | null = null;
   private turning: { yaw: number; pitch: number; done?: () => void } | null = null;
   private keys = new Set<string>();
   private calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
   /** Set when the visitor walks or looks on their own (the HUD's hints go). */
-  onMove?: () => void;
+  onMove?: (how: 'walk' | 'look') => void;
 
   constructor(camera: PerspectiveCamera, grid: Grid) {
     this.camera = camera;
@@ -90,7 +97,7 @@ export class Walker {
     this.stopTurning();
     this.yaw -= dx * LOOK;
     this.pitch = clamp(this.pitch - dy * LOOK, -1.1, 1.1);
-    this.onMove?.();
+    this.onMove?.('look');
   }
 
   private stopTurning() {
@@ -115,14 +122,18 @@ export class Walker {
 
   update(dt: number) {
     const k = this.keys;
-    const ahead = (k.has('KeyW') || k.has('ArrowUp') ? 1 : 0) - (k.has('KeyS') || k.has('ArrowDown') ? 1 : 0);
+    const ahead = (k.has('KeyW') ? 1 : 0) - (k.has('KeyS') ? 1 : 0);
     const side = (k.has('KeyD') ? 1 : 0) - (k.has('KeyA') ? 1 : 0);
-    const turn = (k.has('ArrowLeft') || k.has('KeyQ') ? 1 : 0) - (k.has('ArrowRight') || k.has('KeyE') ? 1 : 0);
-    if (ahead || side || turn) {
+    const turn =
+      (k.has('ArrowLeft') || k.has('KeyQ') ? 1 : 0) -
+      (k.has('ArrowRight') || k.has('KeyE') ? 1 : 0);
+    const tilt = (k.has('ArrowUp') ? 1 : 0) - (k.has('ArrowDown') ? 1 : 0);
+    if (ahead || side || turn || tilt) {
       this.route = null;
       this.turning = null;
-      this.onMove?.();
+      this.onMove?.(ahead || side ? 'walk' : 'look');
       this.yaw += turn * TURN * dt;
+      this.pitch = clamp(this.pitch + tilt * TILT * dt, -1.1, 1.1);
       const v = (k.has('ShiftLeft') || k.has('ShiftRight') ? RUN : SPEED) * dt;
       const fx = -Math.sin(this.yaw);
       const fz = -Math.cos(this.yaw);

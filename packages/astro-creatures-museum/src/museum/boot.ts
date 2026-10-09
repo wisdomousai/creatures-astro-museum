@@ -80,7 +80,11 @@ function chooseLook(): Look {
 
 async function run(plan: Plan, hud: Hud, materials: Materials, look: Look) {
   const palette = materials.palette;
-  const renderer = new WebGLRenderer({ canvas: hud.canvas, antialias: true, powerPreference: 'high-performance' });
+  const renderer = new WebGLRenderer({
+    canvas: hud.canvas,
+    antialias: true,
+    powerPreference: 'high-performance',
+  });
   renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
   renderer.setSize(innerWidth, innerHeight, false);
   renderer.toneMapping = ACESFilmicToneMapping;
@@ -180,12 +184,13 @@ async function run(plan: Plan, hud: Hud, materials: Materials, look: Look) {
 
   const grid = new Grid(plan);
   const walker = new Walker(camera, grid);
-  walker.onMove = () => hud.moved();
+  walker.onMove = (how) => hud.moved(how);
 
   // Where to stand for a page (an exhibit's address, or a wing's).
   const byHref = new Map<string, Exhibit>();
   for (const ex of exhibits)
-    for (const e of ex.hung.entries) if (e.inside) byHref.set(trim(new URL(e.href, location.href).pathname), ex);
+    for (const e of ex.hung.entries)
+      if (e.inside) byHref.set(trim(new URL(e.href, location.href).pathname), ex);
   const wingByPath = new Map(plan.wings.map((w) => [trim(w.path), w]));
   const roomOf = (x: number, z: number): Room | undefined =>
     plan.rooms.find((r) => x >= r.min[0] && x <= r.max[0] && z >= r.min[1] && z <= r.max[1]);
@@ -206,6 +211,7 @@ async function run(plan: Plan, hud: Hud, materials: Materials, look: Look) {
   };
   pages.onOpen = () => {
     walker.release();
+    hud.release();
     walker.stop();
     still = 0;
   };
@@ -282,8 +288,14 @@ async function run(plan: Plan, hud: Hud, materials: Materials, look: Look) {
       const ex = pickOf.get(o);
       if (ex) {
         let entry: Entry | null = null;
-        for (let p: Object3D | null = hit.object; p && !entry; p = p.parent) entry = p.userData.entry ?? null;
-        return { kind: 'exhibit' as const, ex, entry: entry ?? ex.hung.entries[0] ?? null, part: hit.object };
+        for (let p: Object3D | null = hit.object; p && !entry; p = p.parent)
+          entry = p.userData.entry ?? null;
+        return {
+          kind: 'exhibit' as const,
+          ex,
+          entry: entry ?? ex.hung.entries[0] ?? null,
+          part: hit.object,
+        };
       }
       if (o.userData.floor) return { kind: 'floor' as const, point: hit.point };
     }
@@ -292,7 +304,12 @@ async function run(plan: Plan, hud: Hud, materials: Materials, look: Look) {
 
   const marker = new Mesh(
     new RingGeometry(0.16, 0.24, 40),
-    new MeshBasicMaterial({ color: palette.roles.Brass, transparent: true, opacity: 0, depthWrite: false }),
+    new MeshBasicMaterial({
+      color: palette.roles.Brass,
+      transparent: true,
+      opacity: 0,
+      depthWrite: false,
+    }),
   );
   marker.rotation.x = -Math.PI / 2;
   scene.add(marker);
@@ -341,7 +358,13 @@ async function run(plan: Plan, hud: Hud, materials: Materials, look: Look) {
     if (!hoverAt) return;
     const u = under(...hoverAt);
     hoverAt = null;
-    canvas.dataset.over = !u ? '' : u.kind === 'exhibit' ? (u.ex.hung.entries.length ? 'exhibit' : 'art') : u.kind;
+    canvas.dataset.over = !u
+      ? ''
+      : u.kind === 'exhibit'
+        ? u.ex.hung.entries.length
+          ? 'exhibit'
+          : 'art'
+        : u.kind;
     roam.hover(u?.kind === 'crew' ? u.who : null);
     const part = u?.kind === 'exhibit' && u.part.userData.entry ? u.part : null;
     if (part !== hovered) {
@@ -355,10 +378,17 @@ async function run(plan: Plan, hud: Hud, materials: Materials, look: Look) {
     if (pages.mode === 'read' || player.open || e.metaKey || e.ctrlKey || e.altKey) return;
     if ((e.target as HTMLElement).closest?.('input, textarea, select, [contenteditable]')) return;
     walker.key(e.code, true);
+    hud.press(e.code, true);
     if (e.code.startsWith('Arrow') || e.code === 'Space') e.preventDefault();
   });
-  addEventListener('keyup', (e) => walker.key(e.code, false));
-  addEventListener('blur', () => walker.release());
+  addEventListener('keyup', (e) => {
+    walker.key(e.code, false);
+    hud.press(e.code, false);
+  });
+  addEventListener('blur', () => {
+    walker.release();
+    hud.release();
+  });
   addEventListener('resize', () => {
     renderer.setSize(innerWidth, innerHeight, false);
     camera.aspect = innerWidth / innerHeight;
@@ -395,7 +425,8 @@ async function run(plan: Plan, hud: Hud, materials: Materials, look: Look) {
       const { at, look } = shown.hung.view;
       const far = Math.hypot(look[0] - at[0], look[2] - at[2]);
       const off = Math.hypot(walker.x - at[0], walker.z - at[2]);
-      if (Math.hypot(walker.x - look[0], walker.z - look[2]) > far + 1.2 || off > far) caption(null);
+      if (Math.hypot(walker.x - look[0], walker.z - look[2]) > far + 1.2 || off > far)
+        caption(null);
     }
 
     for (const ex of exhibits) {
@@ -405,7 +436,8 @@ async function run(plan: Plan, hud: Hud, materials: Materials, look: Look) {
     }
     videos.update(dt, eye, forward);
     roam.update(dt, camera);
-    if (marker.material.opacity > 0) marker.material.opacity = Math.max(0, marker.material.opacity - dt * 1.2);
+    if (marker.material.opacity > 0)
+      marker.material.opacity = Math.max(0, marker.material.opacity - dt * 1.2);
 
     // The sun's shadows follow the visitor, a metre at a time (so they don't shimmer).
     const sx = Math.round(walker.x);
@@ -418,7 +450,22 @@ async function run(plan: Plan, hud: Hud, materials: Materials, look: Look) {
   });
 
   hud.ready();
-  const debug = { plan, scene, camera, renderer, walker, grid, pages, hud, videos, player, roam, exhibits, go, step };
+  const debug = {
+    plan,
+    scene,
+    camera,
+    renderer,
+    walker,
+    grid,
+    pages,
+    hud,
+    videos,
+    player,
+    roam,
+    exhibits,
+    go,
+    step,
+  };
   (window as unknown as { __museum: typeof debug }).__museum = debug;
 }
 
@@ -430,11 +477,19 @@ function wantCrew() {
     asked = localStorage.getItem('crew');
   } catch {}
   if (asked === 'on') return true;
-  return !(config.crew.respectReducedMotion && matchMedia('(prefers-reduced-motion: reduce)').matches);
+  return !(
+    config.crew.respectReducedMotion && matchMedia('(prefers-reduced-motion: reduce)').matches
+  );
 }
 
 /** What templates build with. */
-function makeCtx(kit: Kit, materials: Materials, look: Look, videos: Videos, anisotropy: number): Ctx {
+function makeCtx(
+  kit: Kit,
+  materials: Materials,
+  look: Look,
+  videos: Videos,
+  anisotropy: number,
+): Ctx {
   const loader = new TextureLoader();
   const images = new Map<string, Promise<Texture>>();
   const { paper, ink } = materials.palette;

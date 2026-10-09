@@ -12,7 +12,8 @@ npm run dev
 
 [See it](https://wisdomousai.github.io/creatures-astro-museum/)
 
-You come in at the lobby, with the about wall and the front desk. Off the lobby is a wing
+You come in at the lobby, with the about wall and the front desk. W A S D walk and the
+arrow keys look round. Off the lobby is a wing
 of halls per collection: projects hang as framed pictures that play their loops while you
 stand in front of them, and posts are books on shelves. Generated art fills the spare wall.
 Click an exhibit to go and stand before it, then step in, and its page opens over the halls

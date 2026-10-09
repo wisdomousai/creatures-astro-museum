@@ -175,30 +175,99 @@
   left: 50%;
   bottom: 1.5rem;
   transform: translateX(-50%);
+  display: grid;
+  grid-template-columns: auto auto;
+  gap: 0.6rem 2.2rem;
+  justify-items: center;
+  padding: 1rem 1.6rem 0.85rem;
+  border: 2px solid var(--m-trim);
+  border-radius: 18px;
+  background: var(--m-paper);
+  box-shadow: 0 4px 0 var(--m-trim);
+  color: var(--m-ink);
+  transition:
+    opacity 0.8s,
+    translate 0.5s;
+  animation: m-hint-in 0.5s 0.4s cubic-bezier(0.2, 0.9, 0.3, 1.2) backwards;
+}
+
+.m-keys {
+  display: grid;
+  justify-items: center;
+  gap: 0.45rem;
+}
+
+.m-keys p {
   margin: 0;
-  padding: 0.5rem 1rem;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--m-trim) 88%, transparent);
-  color: var(--m-paper);
-  font-size: 0.85rem;
-  white-space: nowrap;
-  transition: opacity 0.8s;
+  font-size: 0.9rem;
+}
+
+.m-keys b {
+  font-weight: 650;
+}
+
+/* Laid out as on a keyboard: one key up top, three under it. */
+.m-pad {
+  display: grid;
+  grid-template-columns: repeat(3, 2.1rem);
+  gap: 0.25rem;
+}
+
+.m-pad kbd:first-child {
+  grid-column: 2;
+}
+
+.m-pad kbd:not(:first-child) {
+  grid-row: 2;
 }
 
 .m-hint kbd {
   display: inline-block;
   min-width: 1.4em;
-  margin: 0 0.1em;
   padding: 0.05em 0.3em;
-  border-radius: 5px;
+  border: 2px solid var(--m-trim);
+  border-radius: 7px;
   background: var(--m-paper);
+  box-shadow: 0 2px 0 var(--m-trim);
   color: var(--m-trim);
   font: 600 0.75rem/1.4 var(--font-mono);
   text-align: center;
+  transition:
+    background 0.08s,
+    color 0.08s,
+    translate 0.08s,
+    box-shadow 0.08s;
+}
+
+.m-pad kbd {
+  height: 2.1rem;
+  font-size: 0.95rem;
+  line-height: 1.75rem;
+}
+
+.m-hint kbd.m-on {
+  translate: 0 2px;
+  box-shadow: 0 0 0 var(--m-trim);
+  background: var(--m-brass);
+  color: var(--m-paper);
+}
+
+.m-also {
+  grid-column: 1 / -1;
+  margin: 0.15rem 0 0;
+  font-size: 0.8rem;
+  opacity: 0.75;
+  white-space: nowrap;
+}
+
+/* Out of a caption's way. */
+.m-hint.m-aside {
+  translate: 0 -11rem;
 }
 
 .m-hint.m-gone {
   opacity: 0;
+  pointer-events: none;
 }
 
 .m-caption {
@@ -306,6 +375,14 @@ html[data-museum='read'] #main {
   }
 }
 
+/* (On translate: the hint's transform centres it.) */
+@keyframes m-hint-in {
+  from {
+    translate: 0 1rem;
+    opacity: 0;
+  }
+}
+
 @keyframes m-up {
   from {
     transform: translateY(40vh);
@@ -316,10 +393,10 @@ html[data-museum='read'] #main {
   .m-caption,
   /* (Focused when a page opens, for screen readers: no ring needed.) */
 html[data-museum] #main h1[tabindex='-1']:focus {
-  outline: none;
-}
+    outline: none;
+  }
 
-html[data-museum='read'] #main {
+  html[data-museum='read'] #main {
     animation: none;
   }
 }

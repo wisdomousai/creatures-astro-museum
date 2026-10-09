@@ -15,8 +15,9 @@ npm create astro@latest -- --template wisdomousai/creatures-astro-museum/starter
 
 Every page is still a real page: plain HTML for search engines, for browsers without
 WebGL2, and for anyone who picks **Plain site** (or adds `?flat`). It's built for desktop:
-click the floor to walk there, click an exhibit to go and stand before it, and drag to look
-round. WASD or the arrow keys walk too, and Q and E turn.
+W A S D walk, the arrow keys look round (and Shift hurries), or click the floor to walk there,
+click an exhibit to go and stand before it, and drag to look round. The museum shows the keys
+when it opens, until they've been tried.
 
 ## Options
 
