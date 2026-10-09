@@ -6,9 +6,10 @@ import { collide, type Grid } from '../nav/grid';
 import { EYE } from '../plan/generate';
 import type { V2, V3, View } from '../plan/types';
 
-const SPEED = 2.8;
-const RUN = 5;
-const TURN = 2.2;
+/** A gallery stroll (m/s), with Shift a brisk walk; turning with the keys (rad/s). */
+const SPEED = 1.5;
+const RUN = 2.8;
+const TURN = 1.3;
 const LOOK = 0.0042;
 
 export class Walker {
@@ -19,7 +20,7 @@ export class Walker {
   yaw = 0;
   pitch = 0;
   /** A glide under way: the points still ahead, and where to look at the end. */
-  private route: { points: V2[]; look: V3 | null; done?: () => void; speed: number } | null = null;
+  private route: { points: V2[]; look: V3 | null; done?: () => void; speed: number; t: number } | null = null;
   private turning: { yaw: number; pitch: number; done?: () => void } | null = null;
   private keys = new Set<string>();
   private calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -58,7 +59,7 @@ export class Walker {
       done?.();
       return true;
     }
-    this.route = { points: path.slice(1), look, done, speed };
+    this.route = { points: path.slice(1), look, done, speed, t: 0 };
     this.turning = null;
     return true;
   }
@@ -134,7 +135,7 @@ export class Walker {
     } else if (this.route) this.glide(dt);
     else if (this.turning) {
       const t = this.turning;
-      const a = Math.min(1, dt * 5);
+      const a = Math.min(1, dt * 2.6);
       this.yaw += (t.yaw - this.yaw) * a;
       this.pitch += (t.pitch - this.pitch) * a;
       if (Math.abs(t.yaw - this.yaw) < 0.01 && Math.abs(t.pitch - this.pitch) < 0.01) {
@@ -152,8 +153,10 @@ export class Walker {
     const dz = next[1] - this.z;
     const d = Math.hypot(dx, dz);
     const left = d + pathLength(r.points);
-    // Slowing for the last metre, so it comes to rest rather than stops.
-    const v = r.speed * Math.min(1, 0.25 + left / 1.2) * dt;
+    // Easing into it over the first second, and slowing for the last metre and a half, so
+    // it sets off and comes to rest rather than starts and stops.
+    r.t += dt;
+    const v = r.speed * Math.min(1, 0.2 + r.t) * Math.min(1, 0.2 + left / 1.6) * dt;
     if (d <= v) {
       this.x = next[0];
       this.z = next[1];
@@ -165,10 +168,10 @@ export class Walker {
     // Facing the way it goes, then turning to what it came to see as it arrives.
     let want: number;
     let pitch = 0;
-    if (r.look && left < 1.6) [want, pitch] = aim([this.x, EYE, this.z], r.look);
+    if (r.look && left < 2) [want, pitch] = aim([this.x, EYE, this.z], r.look);
     else want = d > 1e-3 ? Math.atan2(-dx, -dz) : this.yaw;
     if (r.look || d > 0.05) {
-      const a = Math.min(1, dt * 4);
+      const a = Math.min(1, dt * 2.2);
       this.yaw += (nearAngle(this.yaw, want) - this.yaw) * a;
       this.pitch += (pitch - this.pitch) * a;
     }

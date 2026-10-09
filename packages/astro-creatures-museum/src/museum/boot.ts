@@ -249,7 +249,7 @@ async function run(plan: Plan, hud: Hud, materials: Materials, look: Look) {
     const near = Math.min(far, c.hung.slot.height / 2 / Math.tan(fov / 2) / 0.8);
     const to: [number, number] = [look[0] - (dx / far) * near, look[2] - (dz / far) * near];
     player.onClose = () => caption(c);
-    if (!walker.goTo(to, look, () => player.show(film), 3.4)) player.show(film);
+    if (!walker.goTo(to, look, () => player.show(film), 2)) player.show(film);
   };
   hud.onGo = (hung, wing) => {
     if (pages.mode === 'read') pages.close(wing ?? HOME);
