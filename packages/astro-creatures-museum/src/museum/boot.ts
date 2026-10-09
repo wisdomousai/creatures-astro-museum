@@ -375,7 +375,7 @@ async function run(plan: Plan, hud: Hud, materials: Materials, look: Look) {
     const r = roomOf(walker.x, walker.z);
     if (r && r !== room) {
       room = r;
-      hud.setRoom(r.kind === 'lobby' ? 'The lobby' : r.wing);
+      hud.setRoom(r.kind === 'lobby' ? 'The lobby' : (r.title ?? r.wing));
       pages.walkAt(wingPathOf(r));
     }
     if (shown && !walker.moving) {

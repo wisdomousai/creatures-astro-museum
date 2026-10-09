@@ -28,7 +28,14 @@ const entries = (collection, n, template = 'framed-picture', extra = {}) =>
 const input = (works = 12, posts = 15) => ({
   title: 'Lorem',
   wings: [
-    { path: '/projects', label: 'Works', entries: entries('projects', works) },
+    // Every fifth work has a room of its own, hung with its gallery.
+    {
+      path: '/projects',
+      label: 'Works',
+      entries: entries('projects', works).map((e, i) =>
+        i % 5 === 2 ? { ...e, room: true, gallery: [{ src: '/g.webp', width: 900, height: 1200 }] } : e,
+      ),
+    },
     { path: '/blog', label: 'Library', entries: entries('blog', posts, 'bookshelf') },
   ],
   about: entries('about', 1, 'about-wall')[0],
@@ -42,7 +49,8 @@ test('the same content makes the same museum', () => {
 
 test('every page is hung, once', () => {
   const plan = generate(input());
-  const keys = plan.hung.flatMap((h) => h.entries.map((e) => e.key));
+  // (A room of its own's gallery hangs as plates of the page: key#1...)
+  const keys = plan.hung.flatMap((h) => h.entries.map((e) => e.key)).filter((k) => !k.includes('#'));
   assert.equal(new Set(keys).size, keys.length);
   assert.equal(keys.length, 12 + 15 + 2);
   // Fifteen posts go on shelves of nine: two shelves.
@@ -53,8 +61,8 @@ test('no two rooms overlap', () => {
   const plan = generate({
     ...input(40, 40),
     wings: [
-      { path: '/a', label: 'A', entries: entries('a', 40) },
-      { path: '/b', label: 'B', entries: entries('b', 40) },
+      { path: '/a', label: 'A', entries: entries('a', 40).map((e, i) => ({ ...e, room: i % 3 === 0 })) },
+      { path: '/b', label: 'B', entries: entries('b', 40).map((e, i) => ({ ...e, room: i % 4 === 1 })) },
       { path: '/c', label: 'C', entries: entries('c', 40, 'plinth-object') },
       { path: '/d', label: 'D', entries: entries('d', 10) },
     ],
@@ -158,4 +166,20 @@ test('lanes lie inside their rooms, and links join lane ends once each', () => {
       ends.add(key);
     }
   assert.ok(plan.links.length > 0);
+});
+
+test('a room of its own is off its hall, through a doorway, with the piece inside', () => {
+  const plan = generate(input(40, 10));
+  const alcoves = plan.rooms.filter((r) => r.kind === 'alcove');
+  assert.equal(alcoves.length, 8);
+  for (const a of alcoves) {
+    const door = plan.doors.find((d) => d.rooms[1] === a.id);
+    assert.ok(door, `no way into ${a.id}`);
+    assert.ok(plan.rooms.find((r) => r.id === door.rooms[0])?.kind === 'hall');
+    const main = plan.hung.find((h) => h.slot.id === `${a.id}-main`);
+    assert.equal(main.entries.length, 1);
+    assert.equal(main.entries[0].title, a.title);
+    // Its plate, and art on the other side.
+    assert.equal(plan.hung.filter((h) => h.slot.room === a.id).length, 3);
+  }
 });

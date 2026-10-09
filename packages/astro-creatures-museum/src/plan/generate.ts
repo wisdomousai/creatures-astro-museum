@@ -55,6 +55,9 @@ const GAP = 1.0;
 /** Objects down the middle of a hall: the first's distance in, and the step between. */
 const FLOOR = { first: 2.6, step: 3.6 };
 const LOBBY: { min: V2; max: V2 } = { min: [-9, -7], max: [9, 7] };
+/** A room of its own off a hall (an exhibit with `room: true`): as wide along the hall's
+ * wall and as deep behind it. */
+const ALCOVE = { width: 5, depth: 5.5 };
 
 type Side = 'n' | 'e' | 'w' | 's';
 /** The order wings take the lobby's sides: straight ahead, right, left, behind. */
@@ -98,6 +101,8 @@ interface Placed {
   /** Along the wall, or down the middle. */
   u: number;
   seed: number;
+  /** A room of its own behind a doorway here, not hung on the wall. */
+  alcove?: boolean;
 }
 
 interface HallPlan {
@@ -130,21 +135,22 @@ export function generate(input: Input): Plan {
     links.push({ a: { lane: a, end: ae }, b: { lane: b, end: be } });
   const wings: Plan['wings'] = [];
 
-  /** A run of wall from a to b, with a doorway in its middle if `door`. */
-  const side = (a: V2, b: V2, door: boolean, room: string) => {
-    if (!door) {
-      walls.push({ a, b, kind: 'solid', room });
-      return;
-    }
+  /** A run of wall from a to b, with a doorway in its middle if `door` (or doorways
+   * centred so far along it, in metres). */
+  const side = (a: V2, b: V2, door: boolean | number[], room: string) => {
     const len = Math.hypot(b[0] - a[0], b[1] - a[1]);
+    const at = door === true ? [len / 2] : door === false ? [] : [...door].sort((x, y) => x - y);
     const d: V2 = [(b[0] - a[0]) / len, (b[1] - a[1]) / len];
-    const m = len / 2;
     const half = DOOR.width / 2;
-    const d0 = add(a, d, m - half);
-    const d1 = add(a, d, m + half);
-    walls.push({ a, b: d0, kind: 'solid', room });
-    walls.push({ a: d0, b: d1, kind: 'door', room });
-    walls.push({ a: d1, b, kind: 'solid', room });
+    let from = a;
+    for (const m of at) {
+      const d0 = add(a, d, m - half);
+      const d1 = add(a, d, m + half);
+      walls.push({ a: from, b: d0, kind: 'solid', room });
+      walls.push({ a: d0, b: d1, kind: 'door', room });
+      from = d1;
+    }
+    walls.push({ a: from, b, kind: 'solid', room });
   };
 
   /** Hang it: a slot on the wall at `p` facing `n`, and where to stand to see it. */
@@ -262,6 +268,84 @@ export function generate(input: Input): Plan {
   }
   lanes.push({ id: 'lobby', room: 'lobby', at: [-6.4, -1.4], along: [1, 0], length: 12.8, width: 3.6 });
 
+  /**
+   * A room of its own for an exhibit (`room: true`), behind a doorway in a hall's wall at
+   * `c`: the hall runs along `f`, and the room goes `out` from it. The piece hangs on its
+   * back wall, to be seen through the doorway from the hall; its gallery, or art, on the
+   * side walls; its name over the doorway.
+   */
+  const alcoveOff = (hall: string, wing: string, c: V2, f: V2, out: V2, p: Placed) => {
+    const e = p.entries[0];
+    const id = `${hall}-${e.key.replace(/[^a-z0-9]+/gi, '-')}`;
+    const half = ALCOVE.width / 2;
+    const D = ALCOVE.depth;
+    const c0 = add(c, f, -half);
+    const c1 = add(c, f, half);
+    const b0 = add(c0, out, D);
+    const b1 = add(c1, out, D);
+    const xs = [c0[0], c1[0], b0[0], b1[0]];
+    const zs = [c0[1], c1[1], b0[1], b1[1]];
+    rooms.push({
+      id,
+      kind: 'alcove',
+      wing,
+      title: e.title,
+      min: [r3(Math.min(...xs)), r3(Math.min(...zs))],
+      max: [r3(Math.max(...xs)), r3(Math.max(...zs))],
+      forward: out,
+    });
+    // Its walls, the room on each one's right (as the halls' are).
+    const centre = add(c, out, D / 2);
+    const wall = (a: V2, b: V2) => {
+      const d: V2 = [b[0] - a[0], b[1] - a[1]];
+      const toward = (centre[0] - a[0]) * right(d)[0] + (centre[1] - a[1]) * right(d)[1];
+      walls.push(toward > 0 ? { a, b, kind: 'solid', room: id } : { a: b, b: a, kind: 'solid', room: id });
+    };
+    wall(c0, b0);
+    wall(b0, b1);
+    wall(b1, c1);
+    doors.push({ a: add(c, f, -DOOR.width / 2), b: add(c, f, DOOR.width / 2), rooms: [hall, id] });
+    signs.push({ text: e.title, at: v3(add(c, out, -WALL / 2 - 0.01), DOOR.height + 0.5), yaw: r3(yawOf(neg(out))) });
+
+    // The piece, as big as the back wall allows.
+    const fit = (fp: Footprint, w: number, h: number): Footprint => {
+      const k = Math.min(1, w / fp.width, h / fp.height);
+      return { ...fp, mount: 'wall', width: fp.width * k, height: fp.height * k };
+    };
+    const rnd = rng(p.seed);
+    const main = measure(p.template, e, rnd());
+    const template = main.mount === 'floor' ? 'framed-picture' : p.template;
+    const big = { ...main, width: main.width * 1.25, height: main.height * 1.25 };
+    hangOn(id, `${id}-main`, add(c, out, D), neg(out), fit(big, 3, 2.4), template, [e], p.seed);
+    // The gallery (one to a side wall), else art.
+    const sides: [V2, V2][] = [
+      [add(c0, out, D / 2), f],
+      [add(c1, out, D / 2), neg(f)],
+    ];
+    sides.forEach(([at, n], i) => {
+      const g = e.gallery[i];
+      if (g) {
+        const plate: Entry = {
+          ...e,
+          key: `${e.key}#${i + 1}`,
+          kicker: e.title,
+          title: `Plate ${i + 1}`,
+          summary: '',
+          image: g,
+          video: null,
+          film: null,
+          gallery: [],
+          template: 'framed-picture',
+        };
+        const fp = fit(measure('framed-picture', plate, rnd()), D - 2.2, 2.2);
+        hangOn(id, `${id}-plate-${i + 1}`, at, n, fp, 'framed-picture', [plate], p.seed + i + 1);
+      } else {
+        const a = art(`${id}-art-${i}`, 'wall');
+        hangOn(id, `${id}-art-${i}`, at, n, fit(a.fp, D - 2.2, 2.2), a.template, [], a.seed);
+      }
+    });
+  };
+
   // ---------- The wings ----------
   used.forEach((wing, w) => {
     const s = SIDES[w];
@@ -274,13 +358,16 @@ export function generate(input: Input): Plan {
     for (const e of wing.entries) {
       const last = groups[groups.length - 1];
       const holds = measure(e.template, e, 0.5).holds ?? 1;
-      if (holds > 1 && last && last.template === e.template && last.entries.length < holds)
+      if (holds > 1 && !e.room && last && !last.entries[0].room && last.template === e.template && last.entries.length < holds)
         last.entries.push(e);
       else groups.push({ template: e.template, entries: [e] });
     }
     for (const g of groups) {
       const seed = seedOf(g.entries[0].key);
-      const fp = measure(g.template, g.entries[0], rng(seed)());
+      const alcove = g.entries[0].room;
+      const fp: Footprint = alcove
+        ? { mount: 'wall', width: ALCOVE.width, height: DOOR.height }
+        : measure(g.template, g.entries[0], rng(seed)());
       let hall = halls[halls.length - 1];
       if (fp.mount === 'floor') {
         const u = FLOOR.first + hall.floor.length * FLOOR.step;
@@ -296,7 +383,7 @@ export function generate(input: Input): Plan {
       const k: 'left' | 'right' =
         hall.used.left <= hall.used.right || !fits('right') ? 'left' : 'right';
       const start = END + hall.used[k] + (hall.used[k] ? GAP : 0);
-      hall[k].push({ template: g.template, entries: g.entries, fp, u: start + fp.width / 2, seed });
+      hall[k].push({ template: g.template, entries: g.entries, fp, u: start + fp.width / 2, seed, alcove });
       hall.used[k] = start + fp.width - END;
     }
 
@@ -328,15 +415,19 @@ export function generate(input: Input): Plan {
         });
       }
       const more = h < halls.length - 1;
-      side(fr.p(0, -half), fr.p(length, -half), false, id);
-      side(fr.p(length, half), fr.p(0, half), false, id);
+      // The long walls, with a doorway to each room of its own off them.
+      const doorsOn = (k: 'left' | 'right') => hall[k].filter((p) => p.alcove).map((p) => p.u);
+      side(fr.p(0, -half), fr.p(length, -half), doorsOn('left'), id);
+      side(fr.p(length, half), fr.p(0, half), doorsOn('right').map((u) => length - u), id);
       side(fr.p(length, -half), fr.p(length, half), more, id);
 
       const r = fr.r;
       for (const p of hall.left)
-        hangOn(id, `${id}-l-${p.u.toFixed(2)}`, fr.p(p.u, -half), r, p.fp, p.template, p.entries, p.seed);
+        if (p.alcove) alcoveOff(id, wing.label, fr.p(p.u, -half), f, neg(r), p);
+        else hangOn(id, `${id}-l-${p.u.toFixed(2)}`, fr.p(p.u, -half), r, p.fp, p.template, p.entries, p.seed);
       for (const p of hall.right)
-        hangOn(id, `${id}-r-${p.u.toFixed(2)}`, fr.p(p.u, half), neg(r), p.fp, p.template, p.entries, p.seed);
+        if (p.alcove) alcoveOff(id, wing.label, fr.p(p.u, half), f, r, p);
+        else hangOn(id, `${id}-r-${p.u.toFixed(2)}`, fr.p(p.u, half), neg(r), p.fp, p.template, p.entries, p.seed);
       for (const p of hall.floor)
         standAt(id, `${id}-f-${p.u.toFixed(2)}`, fr.p(p.u, 0), neg(f), p.fp, p.template, p.entries, p.seed);
       // Art on what's left of the long walls, now and then.

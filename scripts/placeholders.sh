@@ -34,3 +34,12 @@ ffmpeg -nostdin -y -loglevel error \
   -map '[v]' -map '[a]' -t 30 -c:v libx264 -pix_fmt yuv420p -crf 30 -preset slow \
   -c:a aac -b:a 96k -movflags +faststart public/museum/lorem-film.mp4
 echo "lorem-film: $(du -h public/museum/lorem-film.mp4 | cut -f1)"
+
+# Dolor's room of its own: two plates for its side walls (exhibit.gallery), upright.
+ffmpeg -nostdin -y -loglevel error -f lavfi \
+  -i 'gradients=s=900x1200:c0=0x27434d:c1=0xd6aa4c:c2=0xf3efe6:nb_colors=3:type=radial:seed=7' \
+  -frames:v 1 -q:v 3 src/assets/projects/dolor-1.jpg
+ffmpeg -nostdin -y -loglevel error -f lavfi \
+  -i 'gradients=s=900x1200:c0=0xb8403a:c1=0xf3efe6:c2=0x2f7f86:nb_colors=3:type=circular:seed=11' \
+  -frames:v 1 -q:v 3 src/assets/projects/dolor-2.jpg
+echo "dolor plates: $(du -ch src/assets/projects/dolor-*.jpg | tail -1 | cut -f1)"

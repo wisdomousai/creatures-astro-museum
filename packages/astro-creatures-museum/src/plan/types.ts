@@ -46,8 +46,10 @@ export interface Entry {
 export interface Room {
   id: string;
   kind: 'lobby' | 'hall' | 'alcove';
-  /** The wing's label, for a hall; '' for the lobby. */
+  /** The wing's label, for a hall (and a room off one); '' for the lobby. */
   wing: string;
+  /** What it's called, if not its wing: a room of its own's exhibit. */
+  title?: string;
   /** Its floor: min and max corners. */
   min: V2;
   max: V2;
