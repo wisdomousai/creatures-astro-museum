@@ -30,6 +30,8 @@ export default defineConfig({
         roster: ['bolt', 'dog', 'cat', 'corgi', 'hedgehog', 'owl', 'duck', 'bunny', 'fox', 'penguin', 'bear', 'squirrel', 'vacuum', 'snail', 'turtle', 'pug', 'raven', 'drone', 'kitten', 'beagle'],
         max: [4, 10],
         look: 'colour',
+        // The crew come for everyone, those who ask for less motion too.
+        respectReducedMotion: false,
       },
     }),
   ],
