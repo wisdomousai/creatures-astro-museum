@@ -36,6 +36,7 @@ import type { Pad } from '../arcade/types';
 import { template } from '../exhibits/registry';
 import type { Built, CrewHook, Ctx } from '../exhibits/types';
 import { Grid } from '../nav/grid';
+import { Sight } from '../nav/sight';
 import { EYE } from '../plan/generate';
 import type { Entry, Hung, Plan, Room } from '../plan/types';
 import { type Caption, Hud } from './hud';
@@ -101,8 +102,7 @@ async function run(plan: Plan, hud: Hud, materials: Materials, look: Look) {
     antialias: true,
     powerPreference: 'high-performance',
   });
-  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
-  renderer.setSize(innerWidth, innerHeight, false);
+  const sharpness = new Sharpness(renderer);
   renderer.toneMapping = ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.05;
   renderer.outputColorSpace = SRGBColorSpace;
@@ -214,6 +214,8 @@ async function run(plan: Plan, hud: Hud, materials: Materials, look: Look) {
   scene.add(themed.group);
 
   const grid = new Grid(plan);
+  // (A building of the site's own may have glass in its walls, or none: all of it's drawn.)
+  const sight = plan.building ? null : new Sight(plan);
   const walker = new Walker(camera, grid);
   walker.onMove = (how) => hud.moved(how);
 
@@ -376,7 +378,8 @@ async function run(plan: Plan, hud: Hud, materials: Materials, look: Look) {
     aim(x, y);
     const who = roam.pick(ray.ray);
     if (who) return { kind: 'crew' as const, who };
-    const hit = ray.intersectObjects(targets, true)[0];
+    // (Not what's in a room out of sight, behind a wall.)
+    const hit = ray.intersectObjects(targets, true).find((h) => drawn(h.object));
     if (!hit || hit.distance > 40) return null;
     for (let o: Object3D | null = hit.object; o; o = o.parent) {
       const ex = pickOf.get(o);
@@ -567,7 +570,7 @@ async function run(plan: Plan, hud: Hud, materials: Materials, look: Look) {
     hud.release();
   });
   addEventListener('resize', () => {
-    renderer.setSize(innerWidth, innerHeight, false);
+    sharpness.fit();
     camera.aspect = innerWidth / innerHeight;
     camera.updateProjectionMatrix();
     still = 0;
@@ -606,14 +609,18 @@ async function run(plan: Plan, hud: Hud, materials: Materials, look: Look) {
         caption(null);
     }
 
+    // Only what's in the rooms in sight is drawn (and moves): the rest is behind walls.
+    const seen = sight?.from([eye.x, eye.z], wedge(camera)) ?? null;
     for (const ex of exhibits) {
-      if (!ex.built.update) continue;
+      const there = !seen || seen.has(ex.hung.slot.room);
+      ex.built.object.visible = there;
+      if (!ex.built.update || !there) continue;
       const [x, , z] = ex.hung.view.at;
       ex.built.update(dt, Math.max(0, 1 - Math.hypot(walker.x - x, walker.z - z) / 6));
     }
     videos.update(dt, eye, forward);
-    themed.update(dt, eye);
-    roam.update(dt, camera);
+    themed.update(dt, eye, seen);
+    roam.update(dt, camera, seen);
 
     // The sun's shadows follow the visitor, a metre at a time (so they don't shimmer).
     const sx = Math.round(walker.x);
@@ -623,6 +630,7 @@ async function run(plan: Plan, hud: Hud, materials: Materials, look: Look) {
     sun.target.updateMatrixWorld();
 
     renderer.render(scene, camera);
+    sharpness.frame(now);
   });
 
   hud.ready();
@@ -634,6 +642,7 @@ async function run(plan: Plan, hud: Hud, materials: Materials, look: Look) {
     renderer,
     walker,
     grid,
+    sight,
     pages,
     hud,
     videos,
@@ -725,3 +734,85 @@ function makeCtx(
 
 /** A path without its trailing slash ('/' stays '/'). */
 const trim = (path: string) => path.replace(/\/$/, '') || '/';
+
+/** Drawn: it and all it's in are (not in a room out of sight). */
+function drawn(o: Object3D | null) {
+  for (; o; o = o.parent) if (!o.visible) return false;
+  return true;
+}
+
+const corner = new Vector3();
+const ahead = new Vector3();
+/** Which way the camera looks, seen from above, and how far either side of that it sees
+ * (its view's corners, as the view tips up or down); null if it's looking near straight
+ * up or down, when it might see any way. */
+function wedge(camera: PerspectiveCamera) {
+  camera.getWorldDirection(ahead);
+  if (Math.hypot(ahead.x, ahead.z) < 0.2) return null;
+  const yaw = Math.atan2(ahead.x, ahead.z);
+  const t = Math.tan((camera.fov * Math.PI) / 360);
+  let half = 0;
+  for (const [sx, sy] of [
+    [1, 1],
+    [1, -1],
+    [-1, 1],
+    [-1, -1],
+  ]) {
+    corner.set(sx * t * camera.aspect, sy * t, -1).applyQuaternion(camera.quaternion);
+    // (A corner looking back over the visitor's head, or at their feet: any way.)
+    if (corner.x * ahead.x + corner.z * ahead.z <= 0.05) return null;
+    const off = Math.atan2(corner.x, corner.z) - yaw;
+    half = Math.max(half, Math.abs(off - 2 * Math.PI * Math.round(off / (2 * Math.PI))));
+  }
+  return { yaw, half };
+}
+
+/** Pixels drawn at most, all told: about a big screen's worth (every pixel of a 5K screen,
+ * smoothed, is more than most graphics can draw sixty times a second). */
+const PIXELS = 4e6;
+/** Frames slower than this (ms) and it's drawn less sharp; quicker than this, sharper. */
+const SLOW = 1000 / 40;
+const QUICK = 1000 / 54;
+
+/** How sharp the halls are drawn: the screen's own pixels (two to a CSS pixel at most, and
+ * no more than PIXELS), less while frames come slowly, more again once they're quick
+ * (but not back to what was too slow a moment ago). */
+class Sharpness {
+  private scale = 1;
+  private ceiling = 1;
+  private last = 0;
+  private times: number[] = [];
+  private raised = -Infinity;
+
+  constructor(private renderer: WebGLRenderer) {
+    this.fit();
+  }
+
+  fit() {
+    const most = Math.min(devicePixelRatio, 2, Math.sqrt(PIXELS / (innerWidth * innerHeight)));
+    this.renderer.setPixelRatio(most * this.scale);
+    this.renderer.setSize(innerWidth, innerHeight, false);
+    this.times.length = 0;
+  }
+
+  /** After each frame drawn. */
+  frame(now: number) {
+    const dt = now - this.last;
+    this.last = now;
+    // (Back from a page over the halls, or another tab: start counting again.)
+    if (dt > 250) return void (this.times.length = 0);
+    this.times.push(dt);
+    const n = this.times.length;
+    const mean = (k: number) => this.times.slice(-k).reduce((a, b) => a + b, 0) / k;
+    if (n >= 30 && this.scale > 0.5 && mean(30) > SLOW) {
+      // Too slow just after it was made sharper: that's as sharp as it goes.
+      if (now - this.raised < 5000) this.ceiling = this.scale - 0.01;
+      this.scale = Math.max(0.5, this.scale * 0.8);
+      this.fit();
+    } else if (n >= 150 && this.scale / 0.8 <= this.ceiling + 1e-6 && mean(150) < QUICK) {
+      this.scale /= 0.8;
+      this.raised = now;
+      this.fit();
+    } else if (n >= 150) this.times.splice(0, n - 150);
+  }
+}

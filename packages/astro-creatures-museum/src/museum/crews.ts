@@ -77,6 +77,8 @@ export class Crews {
   readonly roam: Roam;
   readonly residents: Residents[] = [];
   private holder: Roam | null = null;
+  /** Each lane's room, by its id. */
+  private laneRoom: Map<string, string>;
   private v = new Vector3();
   private w = new Vector3();
 
@@ -93,6 +95,7 @@ export class Crews {
     },
   ) {
     const rooms = new Map(plan.rooms.map((r) => [r.id, r]));
+    this.laneRoom = new Map(plan.lanes.map((l) => [l.id, l.room]));
     // (One held may be taken anywhere in its room, clear of the walls.)
     const spec = (l: Lane): LaneSpec => {
       const r = rooms.get(l.room);
@@ -165,7 +168,7 @@ export class Crews {
     let bestD = Infinity;
     for (const r of this.all)
       for (const { c, lane } of r.onStage) {
-        if (c.state === 'gone') continue;
+        if (c.state === 'gone' || !lane.group.visible) continue;
         const centre = c.holder.getWorldPosition(this.v);
         const radius = (c.heightPx / lane.px) * 0.5;
         centre.y += radius;
@@ -222,13 +225,17 @@ export class Crews {
     for (const r of this.all) r.hover(c);
   }
 
-  /** Each frame. The residents of rooms far off are left as they are, out of sight. */
-  update(dt: number, camera: PerspectiveCamera) {
+  /** Each frame. The residents of rooms far off are left as they are, out of sight; and
+   * whoever's in a room out of sight (`seen` has those in it, if it's known) isn't drawn. */
+  update(dt: number, camera: PerspectiveCamera, seen: Set<string> | null = null) {
+    const shown = (lane: { spec: { id: string } }) =>
+      !seen || seen.has(this.laneRoom.get(lane.spec.id) ?? '');
+    for (const lane of this.roam.lanes) lane.group.visible = shown(lane);
     this.roam.update(dt, camera);
     for (const r of this.residents) {
       const awake =
         r.centre.distanceTo(this.v.set(camera.position.x, 0, camera.position.z)) < AWAKE;
-      for (const lane of r.lanes) lane.group.visible = awake;
+      for (const lane of r.lanes) lane.group.visible = awake && shown(lane);
       if (awake) r.update(dt, camera);
     }
   }

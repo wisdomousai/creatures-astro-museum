@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import { generate } from '../src/plan/generate.ts';
 import { Grid, collide } from '../src/nav/grid.ts';
+import { Sight } from '../src/nav/sight.ts';
 
 /** n made-up pages for a collection, in its wing's way. */
 const entries = (collection, n, template = 'framed-picture', extra = {}) =>
@@ -448,4 +449,43 @@ test('the arcade holds more games than the back wall has room for', () => {
     ids,
   );
   assert.equal(new Set(cabinets.map((h) => h.slot.at.join())).size, ids.length);
+});
+
+test('what can be seen is never left out of sight', () => {
+  const plan = generate(input(40, 30));
+  const grid = new Grid(plan);
+  const sight = new Sight(plan);
+  const roomAt = ([x, z]) =>
+    plan.rooms.find((r) => x >= r.min[0] && x <= r.max[0] && z >= r.min[1] && z <= r.max[1]);
+  // Every exhibit, from where it's seen, looking at it.
+  for (const h of plan.hung) {
+    const [x, , z] = h.view.at;
+    const yaw = Math.atan2(h.view.look[0] - x, h.view.look[2] - z);
+    assert.ok(sight.from([x, z], { yaw, half: 0.5 }).has(h.slot.room), `${h.slot.id} unseen`);
+  }
+  // Anywhere to anywhere a straight walk goes clear: in sight, looking every way.
+  const free = [];
+  for (let j = 0; j < grid.rows; j += 6)
+    for (let i = 0; i < grid.cols; i += 6) if (grid.isFree(i, j)) free.push(grid.point(i, j));
+  let pairs = 0;
+  for (const a of free) {
+    const seen = sight.from(a);
+    for (const b of free) {
+      if (!grid.isClear(a, b)) continue;
+      pairs++;
+      assert.ok(seen.has(roomAt(b).id), `${roomAt(b).id} unseen from ${a}`);
+    }
+  }
+  assert.ok(pairs > 1000, `only ${pairs} pairs tried`);
+});
+
+test('the halls behind the walls are out of sight', () => {
+  const plan = generate(input(40, 30));
+  const sight = new Sight(plan);
+  // In the lobby, looking back at the way in: the lobby, and nothing beyond it.
+  assert.deepEqual([...sight.from([0, 5], { yaw: 0, half: 0.9 })], ['lobby']);
+  // Looking up the first wing, its halls in a line, but not the rooms off their sides.
+  const ahead = sight.from([0, 5], { yaw: Math.PI, half: 0.9 });
+  assert.ok(ahead.size > 2 && ahead.size < plan.rooms.length, [...ahead].join(' '));
+  assert.ok(![...ahead].some((id) => plan.rooms.find((r) => r.id === id).kind === 'alcove'));
 });
