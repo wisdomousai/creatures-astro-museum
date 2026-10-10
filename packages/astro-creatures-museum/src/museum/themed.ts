@@ -21,14 +21,13 @@ import {
   Points,
   PointsMaterial,
   Raycaster,
-  type Skeleton,
   type SkinnedMesh,
   SRGBColorSpace,
   type Texture,
   TextureLoader,
   Vector3,
 } from 'three';
-import { dress, loadModel, type RoamSeat } from '@wisdomousai/creatures';
+import { dress, loadModel, type RoamSeat, still } from '@wisdomousai/creatures';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { hash, rng } from '../plan/rng';
@@ -548,62 +547,4 @@ function rebound(piece: Object3D) {
     m.computeBoundingSphere();
     m.computeBoundingBox();
   });
-}
-
-/** A rigged piece that stands still (the cat tree, the kennel), as plain meshes in the pose
- * it's in: rigged, each part's skeleton would be worked out and sent to the graphics every
- * frame, and drawn wherever it is, in sight or not (dress() has every part drawn, as the
- * crew's limbs may swing out of their bounds). Its outlines share its parts' shapes. */
-function still(piece: Object3D) {
-  // (updateMatrixWorld, not updateWorldMatrix: only it brings a rigged part's own up to date.)
-  piece.updateWorldMatrix(true, false);
-  piece.updateMatrixWorld(true);
-  const posed = new Map<BufferGeometry, Map<Skeleton, BufferGeometry>>();
-  const v = new Vector3();
-  const n = new Vector3();
-  const skinned: SkinnedMesh[] = [];
-  piece.traverse((o) => {
-    if ((o as SkinnedMesh).isSkinnedMesh) skinned.push(o as SkinnedMesh);
-    else if ((o as Mesh).isMesh) o.frustumCulled = true;
-  });
-  for (const m of skinned) {
-    m.skeleton.update();
-    let byPose = posed.get(m.geometry);
-    if (!byPose) posed.set(m.geometry, (byPose = new Map()));
-    let geometry = byPose.get(m.skeleton);
-    if (!geometry) {
-      // (Into new arrays of floats: the models' own are packed small, whole numbers to
-      // scale, which a pose may not fit: they'd wrap round.)
-      const pos = m.geometry.attributes.position;
-      const nor = m.geometry.attributes.normal;
-      const positions = new Float32Array(pos.count * 3);
-      const normals = nor ? new Float32Array(pos.count * 3) : null;
-      for (let i = 0; i < pos.count; i++) {
-        v.fromBufferAttribute(pos, i);
-        if (nor) n.fromBufferAttribute(nor, i).add(v);
-        m.applyBoneTransform(i, v).toArray(positions, i * 3);
-        // (Each vertex's blend of its bones is one affine map: a normal's end goes with it.)
-        if (normals) m.applyBoneTransform(i, n).sub(v).normalize().toArray(normals, i * 3);
-      }
-      geometry = m.geometry.clone();
-      geometry.deleteAttribute('skinIndex');
-      geometry.deleteAttribute('skinWeight');
-      geometry.setAttribute('position', new BufferAttribute(positions, 3));
-      if (normals) geometry.setAttribute('normal', new BufferAttribute(normals, 3));
-      geometry.computeBoundingBox();
-      geometry.computeBoundingSphere();
-      byPose.set(m.skeleton, geometry);
-    }
-    const mesh = new Mesh(geometry, m.material);
-    mesh.name = m.name;
-    mesh.userData = m.userData;
-    mesh.renderOrder = m.renderOrder;
-    mesh.position.copy(m.position);
-    mesh.quaternion.copy(m.quaternion);
-    mesh.scale.copy(m.scale);
-    mesh.castShadow = m.castShadow;
-    mesh.receiveShadow = m.receiveShadow;
-    m.parent?.add(mesh);
-    m.removeFromParent();
-  }
 }
